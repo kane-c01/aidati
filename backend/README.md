@@ -54,7 +54,56 @@ curl http://localhost:3000/version
 ## 当前状态
 
 - **M0**:✅ 项目脚手架 + 健康检查 + Prisma 占位
-- **M1**:⏳ 数据库 schema + 微信登录 + 用户模块
+- **M1**:✅ 数据库 schema(14 张 MVP 表)+ 微信登录 + JWT + 用户模块 + 全局基座
+- **M2**:⏳ 上传 + OCR
+
+### M1 已实现接口(均已通过本地 e2e 验证)
+
+| 路径 | 方法 | 鉴权 | 说明 |
+|---|---|---|---|
+| `/healthz` `/readyz` `/version` | GET | 公开 | 探针 |
+| `/v1/auth/wechat-login` | POST | 公开 | 微信登录(dev mock 支持 `code=mock-*`) |
+| `/v1/auth/refresh` | POST | 公开 | 刷新 token(白名单 + 旋转) |
+| `/v1/auth/logout` | POST | ✅ | 撤销当前 access(黑名单) |
+| `/v1/auth/cancel-account` `/v1/user/cancel` | POST | ✅ | 注销账号(7 天冷静期) |
+| `/v1/auth/cancel-account/cancel` `/v1/user/cancel/cancel` | POST | ✅ | 撤销注销 |
+| `/v1/user/me` | GET | ✅ | 个人资料 + 学习统计 + 今日配额 |
+| `/v1/user/me` | PATCH | ✅ | 更新昵称/头像/未成年人模式 |
+| `/v1/user/me/privacy` | GET | ✅ | 隐私协议状态 |
+| `/v1/user/me/privacy/agree` | POST | ✅ | 重新同意隐私协议 |
+| `/v1/feedback` | POST | ✅ | 用户反馈(暂落 admin_log)|
+
+### 本地启动检查清单
+
+```bash
+# 0. 工具链
+node -v          # v20.x
+pnpm -v          # v9.x
+docker ps        # 确认 docker 在跑
+
+# 1. 安装(根目录执行)
+pnpm install
+
+# 2. 起本地中间件(MySQL 3307 / Redis 6380 / MinIO 9000-9001)
+pnpm infra:up
+
+# 3. 配置 backend 环境变量
+cp backend/.env.example backend/.env
+
+# 4. 数据库初始化(在 backend/ 下)
+pnpm prisma:migrate:dev    # 应用 prisma/migrations
+pnpm db:seed                # 写 system_config 13 项
+
+# 5. 启动后端
+pnpm dev                   # http://localhost:3000
+
+# 6. 验证
+curl localhost:3000/healthz
+curl localhost:3000/readyz
+curl -X POST localhost:3000/v1/auth/wechat-login \
+  -H 'Content-Type: application/json' \
+  -d '{"code":"mock-001","privacy_version":"v1.0","agreed_at":"2026-05-05T00:00:00Z"}'
+```
 
 ---
 

@@ -1,10 +1,14 @@
 // ====================================================
-// AI 智能出题学习小程序 - Prisma Schema
-// 完整表结构见《02-数据库设计文档.md》, 实际定义在 M1 里程碑实现
+// AI 智能出题学习小程序 - Prisma Schema (MVP)
+// 配套文档:开发文档/02-数据库设计文档.md
+// MVP 14 张表全部定义于此, V2 表(book_upload_request / favorite / report /
+// appeal / notification)在对应里程碑追加。
 //
-// MVP 包含 14 张表:
-//   user / book / chapter / photo_set / photo / paper / question / answer
-//   mistake / usage_quota / moderation_log / admin_log / system_config
+// 命名规范(与 02 文档一致):
+// - 表名:小写 + 下划线 + 单数  → Prisma 用 @@map 映射
+// - 字段:小写 + 下划线         → @map
+// - PK:BIGINT UNSIGNED 自增   → BigInt + @default(autoincrement())
+// - JSON 输出 ID 转字符串       → 由 ResponseInterceptor 统一处理
 // ====================================================
 
 generator client {
@@ -17,4 +21,417 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// === MVP 表结构由 M1 里程碑实现 ===
+// ============ 枚举 ============
+
+enum UserRole {
+  user
+  admin
+  super_admin
+}
+
+enum BookSource {
+  admin
+  user_upload
+  public_domain
+}
+
+enum BookCopyrightStatus {
+  public_domain
+  licensed
+  user_claimed
+  unknown
+}
+
+enum OcrStatus {
+  pending
+  processing
+  done
+  failed
+}
+
+enum PaperSourceType {
+  book
+  chapter
+  photo_set
+}
+
+enum PaperStatus {
+  generating
+  ready
+  failed
+  submitted
+  graded
+}
+
+enum QuestionType {
+  single
+  multiple
+  judge
+  fill
+  short_answer
+}
+
+enum DifficultyLevel {
+  easy
+  medium
+  hard
+}
+
+enum GradedBy {
+  local
+  ai
+  human
+}
+
+enum MistakeStatus {
+  active
+  mastered
+  manual_mastered
+}
+
+enum ModerationScene {
+  photo
+  ocr_text
+  book_info
+  answer
+  ai_question
+  ai_explanation
+  pdf_text
+  pdf_cover
+}
+
+enum ModerationResult {
+  pass
+  block
+  warn
+}
+
+// ============ 表 ============
+
+/// 用户表
+/// 文档:02-数据库设计文档.md §3.1
+model User {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  openid            String    @unique(map: "uk_user_openid") @db.VarChar(64)
+  unionid           String?   @db.VarChar(64)
+  nickname          String?   @db.VarChar(64)
+  avatarUrl         String?   @map("avatar_url") @db.VarChar(512)
+  role              UserRole  @default(user)
+  /// 1 正常 / 0 封禁 / -1 已注销
+  status            Int       @default(1) @db.TinyInt
+  isMinor           Int       @default(0) @map("is_minor") @db.TinyInt
+  minorModeEnabled  Int       @default(0) @map("minor_mode_enabled") @db.TinyInt
+  privacyVersion    String?   @map("privacy_version") @db.VarChar(16)
+  privacyAgreedAt   DateTime? @map("privacy_agreed_at") @db.Timestamp(0)
+  lastLoginAt       DateTime? @map("last_login_at") @db.Timestamp(0)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  /// 注销时间(7 天冷静期)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  papers            Paper[]
+  mistakes          Mistake[]
+  photoSets         PhotoSet[]
+  answers           Answer[]
+  usageQuotas       UsageQuota[]
+  moderationLogs    ModerationLog[]
+  adminLogs         AdminLog[]    @relation("AdminLogAdmin")
+  booksCreated      Book[]        @relation("BookCreator")
+
+  @@index([unionid], map: "idx_user_unionid")
+  @@index([status], map: "idx_user_status")
+  @@index([deletedAt], map: "idx_user_deleted_at")
+  @@map("user")
+}
+
+/// 书籍
+/// 文档:02-数据库设计文档.md §3.2
+model Book {
+  id                BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  title             String              @db.VarChar(256)
+  author            String?             @db.VarChar(128)
+  isbn              String?             @db.VarChar(20)
+  description       String?             @db.Text
+  coverUrl          String?             @map("cover_url") @db.VarChar(512)
+  pdfUrl            String?             @map("pdf_url") @db.VarChar(512)
+  pdfPages          Int?                @map("pdf_pages")
+  category          String?             @db.VarChar(64)
+  /// 标签 ["小说","历史"]
+  tags              Json?
+  source            BookSource          @default(admin)
+  copyrightStatus   BookCopyrightStatus? @map("copyright_status")
+  /// 1 上架 / 0 下架 / -1 已删除
+  status            Int                 @default(1) @db.TinyInt
+  isRecommended     Int                 @default(0) @map("is_recommended") @db.TinyInt
+  sortWeight        Int                 @default(0) @map("sort_weight")
+  createdBy         BigInt              @map("created_by") @db.UnsignedBigInt
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt         DateTime?           @map("deleted_at") @db.Timestamp(0)
+
+  creator           User                @relation("BookCreator", fields: [createdBy], references: [id])
+  chapters          Chapter[]
+  papers            Paper[]
+  mistakes          Mistake[]
+
+  @@index([status, isRecommended, sortWeight], map: "idx_book_status_recommend")
+  @@index([category], map: "idx_book_category")
+  @@index([isbn], map: "idx_book_isbn")
+  @@map("book")
+}
+
+/// 章节
+/// 文档:02-数据库设计文档.md §3.3
+model Chapter {
+  id              BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  bookId          BigInt   @map("book_id") @db.UnsignedBigInt
+  orderNo         Int      @map("order_no")
+  title           String   @db.VarChar(256)
+  startPage       Int?     @map("start_page")
+  endPage         Int?     @map("end_page")
+  contentSummary  String?  @map("content_summary") @db.Text
+  contentFull     String?  @map("content_full") @db.LongText
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  book            Book     @relation(fields: [bookId], references: [id])
+  papers          Paper[]
+
+  @@index([bookId, orderNo], map: "idx_chapter_book_order")
+  @@map("chapter")
+}
+
+/// 拍照集
+/// 文档:02-数据库设计文档.md §3.4
+/// 一次连拍/一组上传图片视为一个 photo_set, 后续可基于此出题
+model PhotoSet {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  userId      BigInt    @map("user_id") @db.UnsignedBigInt
+  name        String?   @db.VarChar(128)
+  ocrText     String?   @map("ocr_text") @db.LongText
+  ocrStatus   OcrStatus @default(pending) @map("ocr_status")
+  totalPages  Int       @default(0) @map("total_pages")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  /// 7 天后到期清理
+  expiresAt   DateTime  @map("expires_at") @db.Timestamp(0)
+
+  user        User      @relation(fields: [userId], references: [id])
+  photos      Photo[]
+  papers      Paper[]
+
+  @@index([userId, createdAt], map: "idx_photo_set_user_created")
+  @@index([expiresAt], map: "idx_photo_set_expires")
+  @@map("photo_set")
+}
+
+/// 单张照片
+/// 文档:02-数据库设计文档.md §3.5
+model Photo {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  photoSetId    BigInt   @map("photo_set_id") @db.UnsignedBigInt
+  orderNo       Int      @map("order_no")
+  imageUrl      String   @map("image_url") @db.VarChar(512)
+  ocrText       String?  @map("ocr_text") @db.Text
+  ocrCorrected  Int      @default(0) @map("ocr_corrected") @db.TinyInt
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  photoSet      PhotoSet @relation(fields: [photoSetId], references: [id])
+
+  @@index([photoSetId, orderNo], map: "idx_photo_set_order")
+  @@map("photo")
+}
+
+/// 试卷
+/// 文档:02-数据库设计文档.md §3.6
+model Paper {
+  id              BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  userId          BigInt          @map("user_id") @db.UnsignedBigInt
+  sourceType      PaperSourceType @map("source_type")
+  bookId          BigInt?         @map("book_id") @db.UnsignedBigInt
+  chapterId       BigInt?         @map("chapter_id") @db.UnsignedBigInt
+  photoSetId      BigInt?         @map("photo_set_id") @db.UnsignedBigInt
+  /// {question_types, difficulty, count, custom_prompt}
+  config          Json
+  status          PaperStatus     @default(generating)
+  totalQuestions  Int             @default(0) @map("total_questions")
+  llmModel        String?         @map("llm_model") @db.VarChar(64)
+  llmTokensInput  Int?            @map("llm_tokens_input")
+  llmTokensOutput Int?            @map("llm_tokens_output")
+  llmCost         Decimal?        @map("llm_cost") @db.Decimal(10, 4)
+  idempotencyKey  String?         @unique(map: "uk_paper_idempotency") @map("idempotency_key") @db.VarChar(128)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  user            User            @relation(fields: [userId], references: [id])
+  book            Book?           @relation(fields: [bookId], references: [id])
+  chapter         Chapter?        @relation(fields: [chapterId], references: [id])
+  photoSet        PhotoSet?       @relation(fields: [photoSetId], references: [id])
+  questions       Question[]
+  answers         Answer[]
+
+  @@index([userId, createdAt], map: "idx_paper_user_created")
+  @@index([status], map: "idx_paper_status")
+  @@map("paper")
+}
+
+/// 题目
+/// 文档:02-数据库设计文档.md §3.7
+model Question {
+  id              BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  paperId         BigInt          @map("paper_id") @db.UnsignedBigInt
+  orderNo         Int             @map("order_no")
+  type            QuestionType
+  difficulty      DifficultyLevel
+  stem            String          @db.Text
+  /// 选项 [{id:'A',text:'...'}, ...]
+  options         Json?
+  /// 正确答案 ['A'] / ['A','B'] / true / "..."
+  correctAnswer   Json            @map("correct_answer")
+  explanation     String?         @db.Text
+  /// ["微积分","导数"]
+  knowledgePoints Json?           @map("knowledge_points")
+  /// 题干哈希(去重错题用)
+  stemHash        String?         @map("stem_hash") @db.VarChar(64)
+  score           Int             @default(10)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamp(0)
+
+  paper           Paper           @relation(fields: [paperId], references: [id])
+  answers         Answer[]
+  mistakes        Mistake[]
+
+  @@index([paperId, orderNo], map: "idx_question_paper_order")
+  @@index([stemHash], map: "idx_question_stem_hash")
+  @@map("question")
+}
+
+/// 答案与批改
+/// 文档:02-数据库设计文档.md §3.8
+model Answer {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  paperId       BigInt    @map("paper_id") @db.UnsignedBigInt
+  questionId    BigInt    @map("question_id") @db.UnsignedBigInt
+  userId        BigInt    @map("user_id") @db.UnsignedBigInt
+  userAnswer    Json?     @map("user_answer")
+  /// 1 对 / 0 错 / NULL 待评
+  isCorrect     Int?      @map("is_correct") @db.TinyInt
+  score         Int?
+  aiFeedback    String?   @map("ai_feedback") @db.Text
+  aiConfidence  Decimal?  @map("ai_confidence") @db.Decimal(3, 2)
+  gradedBy      GradedBy? @map("graded_by")
+  gradedAt      DateTime? @map("graded_at") @db.Timestamp(0)
+  timeSpentSec  Int?      @map("time_spent_sec")
+
+  paper         Paper     @relation(fields: [paperId], references: [id])
+  question      Question  @relation(fields: [questionId], references: [id])
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@unique([paperId, questionId, userId], map: "uk_answer_paper_question_user")
+  @@index([userId], map: "idx_answer_user")
+  @@map("answer")
+}
+
+/// 错题本
+/// 文档:02-数据库设计文档.md §3.9
+model Mistake {
+  id                  BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  userId              BigInt        @map("user_id") @db.UnsignedBigInt
+  questionId          BigInt        @map("question_id") @db.UnsignedBigInt
+  bookId              BigInt?       @map("book_id") @db.UnsignedBigInt
+  /// 用于去重(题干 + 题型 hash)
+  stemHash            String        @map("stem_hash") @db.VarChar(64)
+  firstWrongAt        DateTime      @map("first_wrong_at") @db.Timestamp(0)
+  lastWrongAt         DateTime      @map("last_wrong_at") @db.Timestamp(0)
+  wrongCount          Int           @default(1) @map("wrong_count")
+  /// 重做时连续答对次数
+  consecutiveCorrect  Int           @default(0) @map("consecutive_correct")
+  status              MistakeStatus @default(active)
+  masteredAt          DateTime?     @map("mastered_at") @db.Timestamp(0)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  user                User          @relation(fields: [userId], references: [id])
+  question            Question      @relation(fields: [questionId], references: [id])
+  book                Book?         @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, stemHash], map: "uk_mistake_user_stem")
+  @@index([userId, status], map: "idx_mistake_user_status")
+  @@index([bookId], map: "idx_mistake_book")
+  @@map("mistake")
+}
+
+/// 出题额度
+/// 文档:02-数据库设计文档.md §3.10
+/// 按「用户 + 自然日」统计;每日 0:00 重置由查询逻辑实现, 无需定时任务
+model UsageQuota {
+  userId       BigInt   @map("user_id") @db.UnsignedBigInt
+  /// 自然日(Asia/Shanghai)
+  date         DateTime @db.Date
+  usedCount    Int      @default(0) @map("used_count")
+  /// V2 邀请额外额度
+  inviteBonus  Int      @default(0) @map("invite_bonus")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@id([userId, date])
+  @@map("usage_quota")
+}
+
+/// 内容审核日志
+/// 文档:02-数据库设计文档.md §3.11
+/// 法律要求保留 ≥ 6 个月, 大表建议按月分区(运维侧执行 ALTER TABLE)
+model ModerationLog {
+  id                  BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  /// 操作人(系统调用为 NULL)
+  userId              BigInt?          @map("user_id") @db.UnsignedBigInt
+  scene               ModerationScene
+  /// 内容哈希(原文加密外存,只留哈希)
+  contentHash         String           @map("content_hash") @db.VarChar(64)
+  /// 内容快照(OSS 加密对象)
+  contentSnapshotUrl  String?          @map("content_snapshot_url") @db.VarChar(512)
+  result              ModerationResult
+  reason              String?          @db.VarChar(256)
+  apiProvider         String           @default("wechat") @map("api_provider") @db.VarChar(32)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamp(0)
+
+  user                User?            @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt], map: "idx_moderation_user_time")
+  @@index([scene, result], map: "idx_moderation_scene_result")
+  @@index([createdAt], map: "idx_moderation_time")
+  @@map("moderation_log")
+}
+
+/// 管理员操作日志
+/// 文档:02-数据库设计文档.md §3.12
+model AdminLog {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  adminId     BigInt   @map("admin_id") @db.UnsignedBigInt
+  /// 如 book.publish, user.ban
+  action      String   @db.VarChar(64)
+  /// book / user / report ...
+  targetType  String   @map("target_type") @db.VarChar(32)
+  targetId    BigInt?  @map("target_id") @db.UnsignedBigInt
+  meta        Json?
+  ip          String?  @db.VarChar(45)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  admin       User     @relation("AdminLogAdmin", fields: [adminId], references: [id])
+
+  @@index([adminId, createdAt], map: "idx_admin_log_admin_time")
+  @@index([targetType, targetId], map: "idx_admin_log_target")
+  @@map("admin_log")
+}
+
+/// 系统配置
+/// 文档:02-数据库设计文档.md §3.13
+model SystemConfig {
+  /// 配置项 key
+  keyName     String   @id @map("key_name") @db.VarChar(64)
+  value       Json
+  description String?  @db.VarChar(256)
+  updatedBy   BigInt?  @map("updated_by") @db.UnsignedBigInt
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("system_config")
+}

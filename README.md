@@ -3,7 +3,7 @@
 > 一款基于微信小程序的 AI 学习辅助工具,通过拍照或共享书库,由 AI 自动出题、批改、解析,帮助用户高效学习任意书籍内容。
 >
 > 文档版本:PRD v1.1 + 开发文档 v1.0
-> 当前里程碑:**M0 - 项目脚手架已就绪**
+> 当前里程碑:**M1 - DB + 后端基座 + 鉴权已就绪**
 
 ---
 
@@ -51,8 +51,9 @@ cp backend/.env.example backend/.env
 cp admin-web/.env.example admin-web/.env.development
 cp ai-service/.env.example ai-service/.env
 
-# 5.(M1 起)初始化数据库
-# pnpm --filter ai-quiz-backend prisma migrate dev
+# 5. 初始化数据库 + 写入种子配置
+pnpm --filter ai-quiz-backend prisma:migrate:dev
+pnpm --filter ai-quiz-backend db:seed
 
 # 6. 启动各应用(分别在不同 terminal)
 pnpm dev:backend           # http://localhost:3000/healthz
@@ -68,8 +69,8 @@ cd ai-service && uvicorn app.main:app --reload --port 8000   # http://localhost:
 | # | 里程碑 | 状态 |
 |---|---|---|
 | **M0** | 项目脚手架 | ✅ 已完成 |
-| M1 | DB + 后端基座 + 鉴权 | ⏳ 待开始 |
-| M2 | 上传 + OCR | ⏳ |
+| **M1** | DB + 后端基座 + 鉴权 | ✅ 已完成 |
+| M2 | 上传 + OCR | ⏳ 待开始 |
 | M3 | AI 出题 + 批改(核心) | ⏳ |
 | M4 | 错题本 + 学习中心 | ⏳ |
 | M5 | 书籍 + 章节 | ⏳ |
@@ -124,4 +125,4 @@ cd ai-service && uvicorn app.main:app --reload --port 8000   # http://localhost:
 
 ---
 
-**最后更新**:2026-05-05(M0 完成)
+**最后更新**:2026-05-05(M1 完成)

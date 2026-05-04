@@ -34,7 +34,8 @@ services:
       MYSQL_PASSWORD: dev_app
       TZ: Asia/Shanghai
     ports:
-      - '3306:3306'
+      # 宿主机 3307 → 容器 3306, 避免与本机其它 MySQL 实例冲突
+      - '3307:3306'
     volumes:
       - mysql-data:/var/lib/mysql
       - ./mysql/init:/docker-entrypoint-initdb.d:ro
@@ -59,7 +60,8 @@ services:
     container_name: ai-quiz-redis
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      # 宿主机 6380 → 容器 6379, 避免与本机其它 Redis 冲突
+      - '6380:6379'
     volumes:
       - redis-data:/data
     command:

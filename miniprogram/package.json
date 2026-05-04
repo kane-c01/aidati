@@ -9,8 +9,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "mobx-miniprogram": "^4.13.2",
-    "mobx-miniprogram-bindings": "^4.13.2",
+    "mobx-miniprogram": "^6.12.3",
+    "mobx-miniprogram-bindings": "^6.0.0",
     "tdesign-miniprogram": "^1.6.5"
   },
   "devDependencies": {
@@ -18,7 +18,7 @@
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
     "eslint": "^8.57.1",
-    "miniprogram-api-typings": "^3.12.3",
+    "miniprogram-api-typings": "^5.1.2",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2"
   }
