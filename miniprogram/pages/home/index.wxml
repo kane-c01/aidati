@@ -1,0 +1,8 @@
+<view class="container placeholder">
+  <view class="card placeholder__card">
+    <text class="placeholder__title">{{title}}</text>
+    <text class="placeholder__subtitle">{{subtitle}}</text>
+    <view class="placeholder__divider"></view>
+    <text class="placeholder__hint">{{hint}}</text>
+  </view>
+</view>

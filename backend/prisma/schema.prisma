@@ -1,0 +1,20 @@
+// ====================================================
+// AI 智能出题学习小程序 - Prisma Schema
+// 完整表结构见《02-数据库设计文档.md》, 实际定义在 M1 里程碑实现
+//
+// MVP 包含 14 张表:
+//   user / book / chapter / photo_set / photo / paper / question / answer
+//   mistake / usage_quota / moderation_log / admin_log / system_config
+// ====================================================
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// === MVP 表结构由 M1 里程碑实现 ===

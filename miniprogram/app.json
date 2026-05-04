@@ -1,0 +1,26 @@
+{
+  "pages": ["pages/home/index"],
+  "window": {
+    "navigationBarBackgroundColor": "#FAFAF7",
+    "navigationBarTitleText": "AI 出题学习",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FAFAF7",
+    "backgroundTextStyle": "dark",
+    "enablePullDownRefresh": false
+  },
+  "permission": {
+    "scope.userInfo": {
+      "desc": "用于完善个人资料"
+    },
+    "scope.camera": {
+      "desc": "用于拍照录入书籍内容"
+    },
+    "scope.album": {
+      "desc": "用于从相册批量选择书籍照片"
+    }
+  },
+  "requiredPrivateInfos": ["chooseImage", "chooseMedia"],
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

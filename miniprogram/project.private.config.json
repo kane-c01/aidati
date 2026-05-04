@@ -1,0 +1,10 @@
+{
+  "$schema": "https://developers.weixin.qq.com/miniprogram/dev/devtools/projectsetting.html",
+  "projectname": "ai-quiz-miniprogram",
+  "setting": {
+    "compileHotReLoad": true,
+    "urlCheck": false
+  },
+  "libVersion": "3.4.4",
+  "condition": {}
+}

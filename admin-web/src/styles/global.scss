@@ -1,0 +1,23 @@
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family:
+    -apple-system,
+    'PingFang SC',
+    'Helvetica Neue',
+    'Microsoft YaHei',
+    'Source Han Sans CN',
+    sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  background-color: #fafaf7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}

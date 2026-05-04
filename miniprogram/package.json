@@ -1,0 +1,25 @@
+{
+  "name": "ai-quiz-miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI 智能出题学习小程序 - 微信小程序前端",
+  "scripts": {
+    "lint": "eslint . --ext .ts,.js --fix",
+    "format": "prettier --write \"**/*.{ts,js,json,wxss,wxml}\"",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "mobx-miniprogram": "^4.13.2",
+    "mobx-miniprogram-bindings": "^4.13.2",
+    "tdesign-miniprogram": "^1.6.5"
+  },
+  "devDependencies": {
+    "@types/wechat-miniprogram": "^3.4.7",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^8.57.1",
+    "miniprogram-api-typings": "^3.12.3",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}

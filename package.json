@@ -1,0 +1,28 @@
+{
+  "name": "ai-quiz-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI 智能出题学习小程序 - Monorepo 根仓(微信小程序 + Web 后台 + NestJS 业务后端 + FastAPI AI 编排)",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev:backend": "pnpm --filter ai-quiz-backend dev",
+    "dev:admin": "pnpm --filter ai-quiz-admin-web dev",
+    "build:backend": "pnpm --filter ai-quiz-backend build",
+    "build:admin": "pnpm --filter ai-quiz-admin-web build",
+    "lint": "pnpm -r --parallel run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,vue,js,json,md,wxss,scss}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,vue,js,json,md,wxss,scss}\"",
+    "infra:up": "docker compose -f deploy/docker-compose.yml up -d mysql redis minio",
+    "infra:down": "docker compose -f deploy/docker-compose.yml down",
+    "infra:logs": "docker compose -f deploy/docker-compose.yml logs -f",
+    "infra:reset": "docker compose -f deploy/docker-compose.yml down -v"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}

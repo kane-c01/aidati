@@ -1,0 +1,22 @@
+# ====================================================
+# Prometheus 配置(占位)
+# 文档:开发文档/05-部署运维与安全.md §6.3
+# 完整 scrape / alert rules 由 M9 里程碑实现
+# ====================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: ai-quiz
+
+scrape_configs:
+  - job_name: backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['backend:3000']
+
+  - job_name: ai-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['ai-service:8000']

@@ -1,0 +1,83 @@
+# ====================================================
+# AI 智能出题学习小程序 - Git 忽略清单
+# 文档:开发文档/05-部署运维与安全.md §5.1 (密钥不进 git)
+# ====================================================
+
+# === Node ===
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.python-version
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# === 构建产物 ===
+dist/
+build/
+*.tsbuildinfo
+.next/
+out/
+miniprogram/miniprogram_npm/
+
+# === 环境变量与密钥(按 §5.1 强制隔离) ===
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+!*.example
+!.env.example
+!.env.development
+miniprogram/wxconfig.local.json
+
+# === IDE / 编辑器 ===
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# === 测试 / 覆盖率 ===
+coverage/
+.nyc_output/
+*.lcov
+
+# === Docker 数据卷 ===
+deploy/data/
+deploy/.minio-data/
+deploy/.mysql-data/
+
+# === 微信开发者工具临时产物 ===
+miniprogram/.miniprogram.config
+miniprogram/.cloudbase/
+miniprogram/.tea/
+
+# === 通用临时文件 ===
+tmp/
+temp/
+*.tmp
+*.log
+*.pid
+*.seed
+
+# === Prisma ===
+backend/prisma/migrations/dev.db*
+
+# === Sentry ===
+.sentryclirc

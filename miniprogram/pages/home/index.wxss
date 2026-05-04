@@ -1,0 +1,43 @@
+.placeholder {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder__card {
+  width: 100%;
+  text-align: center;
+  padding: 64rpx 48rpx;
+}
+
+.placeholder__title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16rpx;
+}
+
+.placeholder__subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #4a4a4a;
+  margin-bottom: 32rpx;
+}
+
+.placeholder__divider {
+  width: 64rpx;
+  height: 4rpx;
+  background-color: #5b5bd6;
+  margin: 0 auto 32rpx;
+  border-radius: 2rpx;
+  opacity: 0.5;
+}
+
+.placeholder__hint {
+  display: block;
+  font-size: 24rpx;
+  color: #8c8c8c;
+  line-height: 1.5;
+}

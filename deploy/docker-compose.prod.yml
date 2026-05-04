@@ -1,0 +1,32 @@
+# ====================================================
+# 生产环境 docker-compose 模板
+# 文档:开发文档/05-部署运维与安全.md §3.4
+#
+# 注意:
+# - 生产建议使用云厂商 RDS / Redis / OSS 托管, 不要在容器里跑数据库
+# - 业务镜像应来自 ACR / TCR 私有仓库
+# - 蓝绿部署:启动新版容器 + Nginx 切流, 老版容器保留 1 天后回收
+# - 完整内容由 M9 里程碑实现
+# ====================================================
+
+name: ai-quiz-prod
+
+networks:
+  app-net:
+    driver: bridge
+
+services:
+  # 此处由 M9 里程碑完善
+  # backend:
+  #   image: registry.example.com/ai-quiz/backend:${VERSION}
+  #   ...
+  # ai-service:
+  #   image: registry.example.com/ai-quiz/ai-service:${VERSION}
+  #   ...
+  # nginx:
+  #   image: nginx:1.27-alpine
+  #   ...
+  placeholder:
+    image: alpine:latest
+    profiles: ['_disabled']
+    command: ['true']

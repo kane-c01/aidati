@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+coverage
+*.log
+.env*
+开发文档/
+PRD-*.md
+ai-service/
+deploy/data/
+deploy/.mysql-data/
+deploy/.minio-data/
+miniprogram/miniprogram_npm/
+.terminals/

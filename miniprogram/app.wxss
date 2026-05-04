@@ -1,0 +1,69 @@
+/**
+ * 全局样式
+ * 设计 Token 来源:开发文档/06-UI设计规范.md §2
+ * 风格代号:Quietly Smart(安静而智能)
+ */
+
+page {
+  background-color: #fafaf7;
+  font-family:
+    -apple-system, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', 'Source Han Sans CN',
+    sans-serif;
+  font-size: 28rpx;
+  color: #1a1a1a;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 通用容器 */
+.container {
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+/* 通用卡片 */
+.card {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+/* 主操作按钮基线 */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  background-color: #5b5bd6;
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 16rpx;
+  border: none;
+}
+
+.btn-primary[disabled],
+.btn-primary.disabled {
+  background-color: #c8c8f0;
+  color: #ffffff;
+}
+
+/* 文字色阶 */
+.text-primary {
+  color: #1a1a1a;
+}
+
+.text-secondary {
+  color: #4a4a4a;
+}
+
+.text-tertiary {
+  color: #8c8c8c;
+}
+
+/* 安全区适配占位 */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
