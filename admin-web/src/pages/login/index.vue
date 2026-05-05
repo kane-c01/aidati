@@ -54,7 +54,8 @@
       </el-form>
 
       <p class="hint">
-        提示:本地 dev 默认放行 <code>code=mock-*</code>;真实环境需要扫描微信工作号 + 服务端校验。
+        本地 dev:<code>mock-super-*</code> 直登超管,<code>mock-admin-*</code> 直登管理员;<br />
+        真实环境需要扫描微信工作号 + 服务端校验。
       </p>
     </div>
   </div>
@@ -75,7 +76,8 @@ const router = useRouter();
 const formRef = ref<FormInstance>();
 const submitting = ref(false);
 const form = reactive({
-  code: 'mock-admin-001',
+  // dev 默认填超管 code, 后端识别 mock-super-* 前缀自动给 super_admin 角色
+  code: 'mock-super-001',
   nickname: '',
 });
 

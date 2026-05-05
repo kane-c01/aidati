@@ -44,9 +44,16 @@ export class AuthService {
 
   /**
    * 微信登录 - jscode2session → 查/建用户 → 检查状态 → 签发 token
+   *
+   * dev 角色快速通道(仅 NODE_ENV !== production):
+   *   code 以 `mock-super-*` 开头 → role=super_admin
+   *   code 以 `mock-admin-*` 开头 → role=admin
+   *   其它 mock-*               → role=user
+   * 已存在用户也会按上述规则被自动「提权」, 解决「演示前还要 SQL 改 role」的痛点
    */
   async wechatLogin(dto: WechatLoginDto): Promise<LoginResult> {
     const session = await this.wechat.code2session(dto.code);
+    const desiredRole = this.deriveDevRole(dto.code);
 
     const existing = await this.prisma.user.findUnique({
       where: { openid: session.openid },
@@ -63,14 +70,16 @@ export class AuthService {
           unionid: session.unionid ?? null,
           nickname: dto.user_info?.nickname ?? null,
           avatarUrl: dto.user_info?.avatar_url ?? null,
-          role: UserRole.user,
+          role: desiredRole ?? UserRole.user,
           status: 1,
           privacyVersion: dto.privacy_version ?? null,
           privacyAgreedAt: dto.agreed_at ? new Date(dto.agreed_at) : null,
           lastLoginAt: new Date(),
         },
       });
-      this.logger.log(`新用户注册 openid=${maskOpenid(session.openid)} user_id=${user.id}`);
+      this.logger.log(
+        `新用户注册 openid=${maskOpenid(session.openid)} user_id=${user.id} role=${user.role}`,
+      );
     } else {
       this.checkUserStatus(existing);
 
@@ -87,6 +96,11 @@ export class AuthService {
           // 如果是已注销用户在 7 天冷静期内重新登录, 自动取消注销
           deletedAt: existing.deletedAt ? null : existing.deletedAt,
           status: existing.deletedAt ? 1 : existing.status,
+          // dev 快速提权:保护 super_admin 不被降级
+          role:
+            desiredRole && this.shouldOverrideRole(existing.role, desiredRole)
+              ? desiredRole
+              : existing.role,
         },
       });
     }
@@ -109,6 +123,27 @@ export class AuthService {
         is_first_login: isFirstLogin,
       },
     };
+  }
+
+  /**
+   * dev 角色快速通道
+   * 仅在非 production 启用;生产环境真实微信 code 不会以 mock- 开头
+   */
+  private deriveDevRole(code: string): UserRole | null {
+    if (process.env.NODE_ENV === 'production') return null;
+    if (code.startsWith('mock-super-')) return UserRole.super_admin;
+    if (code.startsWith('mock-admin-')) return UserRole.admin;
+    return null;
+  }
+
+  /**
+   * 是否应该把现有用户的 role 覆盖成 desiredRole
+   * - super_admin 永远不被降级
+   * - 其它情况下,只要 desiredRole 与现状不同就覆盖
+   */
+  private shouldOverrideRole(currentRole: UserRole, desiredRole: UserRole): boolean {
+    if (currentRole === UserRole.super_admin) return false;
+    return currentRole !== desiredRole;
   }
 
   /**
