@@ -74,6 +74,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return ERROR_CODES.PARAM_INVALID;
       case HttpStatus.UNAUTHORIZED:
         return ERROR_CODES.TOKEN_INVALID;
+      case HttpStatus.FORBIDDEN:
+        return ERROR_CODES.PERMISSION_DENIED;
       case HttpStatus.NOT_FOUND:
         return ERROR_CODES.RESOURCE_NOT_FOUND;
       case HttpStatus.TOO_MANY_REQUESTS:

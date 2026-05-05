@@ -14,6 +14,7 @@ import { PrismaModule } from './infra/prisma/prisma.module';
 import { QueueModule } from './infra/queue/queue.module';
 import { RedisModule } from './infra/redis/redis.module';
 import { StorageModule } from './infra/storage/storage.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookModule } from './modules/book/book.module';
 import { MistakeModule } from './modules/mistake/mistake.module';
@@ -55,6 +56,7 @@ import { UserModule } from './modules/user/user.module';
     BookModule,
     MistakeModule,
     PaperModule,
+    AdminModule,
   ],
   providers: [
     {
