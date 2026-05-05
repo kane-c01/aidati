@@ -1,7 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { type Job } from 'bullmq';
-import { type Prisma, PaperStatus, QuestionType, DifficultyLevel } from '@prisma/client';
+import {
+  type Prisma,
+  ModerationScene,
+  PaperStatus,
+  QuestionType,
+  DifficultyLevel,
+} from '@prisma/client';
 
 import { sha256 } from '../../../common/utils/sha256';
 import { AiService } from '../../../infra/ai-service/ai-service.service';
@@ -14,6 +20,7 @@ import {
   type PaperGenerateJobData,
   QUEUE_PAPER_GENERATE,
 } from '../../../infra/queue/queue.constants';
+import { ModerationService } from '../../moderation/moderation.service';
 import { QuotaService } from '../../quota/quota.service';
 import { ContextBuilderService } from '../services/context-builder.service';
 
@@ -38,6 +45,7 @@ export class PaperGenerateProcessor extends WorkerHost {
     private readonly contextBuilder: ContextBuilderService,
     private readonly aiService: AiService,
     private readonly quota: QuotaService,
+    private readonly moderation: ModerationService,
   ) {
     super();
   }
@@ -64,6 +72,22 @@ export class PaperGenerateProcessor extends WorkerHost {
 
     try {
       const ctx = await this.contextBuilder.buildForPaper(paper);
+
+      // 内容安全(M6):context_text 与 custom_prompt 都要过审, 任何一段命中即整体 block
+      // 拍照集场景的 OCR 文本已经在写回时过审一次, 这里再做一次"出题边界"再保护
+      await this.moderation.checkOrThrow({
+        scene: ModerationScene.book_info,
+        userId,
+        text: ctx.context_text.slice(0, 5000),
+      });
+      const customPrompt = typeof config.custom_prompt === 'string' ? config.custom_prompt : null;
+      if (customPrompt && customPrompt.trim().length > 0) {
+        await this.moderation.checkOrThrow({
+          scene: ModerationScene.ai_question,
+          userId,
+          text: customPrompt,
+        });
+      }
 
       const resp = await this.aiService.generatePaper({
         paper_id: paper.id.toString(),

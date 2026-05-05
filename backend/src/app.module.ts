@@ -17,6 +17,7 @@ import { StorageModule } from './infra/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookModule } from './modules/book/book.module';
 import { MistakeModule } from './modules/mistake/mistake.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 import { PaperModule } from './modules/paper/paper.module';
 import { PhotoModule } from './modules/photo/photo.module';
 import { QuotaModule } from './modules/quota/quota.module';
@@ -44,6 +45,7 @@ import { UserModule } from './modules/user/user.module';
     StorageModule,
     QueueModule,
     AiServiceModule,
+    ModerationModule,
     QuotaModule,
     HealthModule,
     AuthModule,

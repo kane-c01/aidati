@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { type Photo, type PhotoSet, OcrStatus, Prisma } from '@prisma/client';
+import { ModerationScene, type Photo, type PhotoSet, OcrStatus, Prisma } from '@prisma/client';
 
 import { ERROR_CODES } from '../../common/constants/error-codes';
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../common/exceptions/business.exception';
 import { StorageService } from '../../infra/storage/storage.service';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { ModerationService } from '../moderation/moderation.service';
 
 import type { BindPhotoDto } from './dto/bind-photo.dto';
 import type { OcrMode } from './dto/start-ocr.dto';
@@ -57,6 +58,7 @@ export class PhotoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly moderation: ModerationService,
   ) {}
 
   // ===== Photo / PhotoSet CRUD =====
@@ -70,6 +72,13 @@ export class PhotoService {
   ): Promise<PhotoView & { photo_set_id: string }> {
     const key = this.assertOwnedKey(dto.image_url);
     await this.assertObjectExists(key);
+
+    // 内容安全:图像入库前 imgSecCheck(M6)
+    await this.moderation.checkOrThrow({
+      scene: ModerationScene.photo,
+      userId,
+      imageUrl: dto.image_url,
+    });
 
     const maxPhotos = await this.getMaxPhotoPages();
 
@@ -303,6 +312,17 @@ export class PhotoService {
     });
     if (photos.length !== ids.length) {
       throw new BusinessException(ERROR_CODES.PARAM_INVALID, '存在不属于该拍照集的 photo_id');
+    }
+
+    // 内容安全:OCR 写回 / 校对文本必须过审, 任何一张命中即整批 block(M6)
+    for (const it of dto.items) {
+      if (it.ocr_text && it.ocr_text.trim().length > 0) {
+        await this.moderation.checkOrThrow({
+          scene: ModerationScene.ocr_text,
+          userId,
+          text: it.ocr_text,
+        });
+      }
     }
 
     await this.prisma.$transaction(

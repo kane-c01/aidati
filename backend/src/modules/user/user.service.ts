@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { type User, UserRole } from '@prisma/client';
+import { ModerationScene, type User, UserRole } from '@prisma/client';
 
 import {
   BusinessException,
@@ -10,6 +10,7 @@ import { ERROR_CODES } from '../../common/constants/error-codes';
 import { maskOpenid } from '../../common/utils/mask';
 import { nextShanghaiMidnightUtc, todayInShanghaiAsDate } from '../../common/utils/timezone';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { ModerationService } from '../moderation/moderation.service';
 
 import type { FeedbackDto } from './dto/feedback.dto';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
@@ -63,6 +64,7 @@ export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly moderation: ModerationService,
   ) {}
 
   /**
@@ -147,6 +149,22 @@ export class UserService {
    */
   async submitFeedback(userId: bigint, dto: FeedbackDto): Promise<{ ok: true }> {
     const user = await this.findUserOrThrow(userId);
+
+    // 内容安全:反馈正文 + 联系方式都过审一遍
+    if (dto.content && dto.content.trim().length > 0) {
+      await this.moderation.checkOrThrow({
+        scene: ModerationScene.answer,
+        userId,
+        text: dto.content,
+      });
+    }
+    if (dto.contact && dto.contact.trim().length > 0) {
+      await this.moderation.checkOrThrow({
+        scene: ModerationScene.answer,
+        userId,
+        text: dto.contact,
+      });
+    }
 
     await this.prisma.adminLog.create({
       data: {
