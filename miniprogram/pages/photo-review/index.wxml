@@ -1,0 +1,54 @@
+<view class="pr">
+  <view wx:if="{{ocrStatus === 'pending' || ocrStatus === 'processing'}}" class="pr__loading">
+    <loading-stage
+      title="正在识别文字..."
+      hint="20 页大约 60 秒, 通常 ≤ 30 秒"
+      progress="{{progress}}"
+    />
+  </view>
+
+  <error-state
+    wx:elif="{{ocrStatus === 'failed' && !items.length}}"
+    title="未能识别到任何文字"
+    description="请检查光线后重拍, 或更换更清晰的页面"
+    actionText="返回拍照"
+    bind:action="onBackPhoto"
+  />
+
+  <block wx:else>
+    <view class="pr__head">
+      <text class="pr__head-title">校对识别结果({{items.length}} 页)</text>
+      <text class="pr__head-hint">手动修正 OCR 错字, 不动也可直接出题</text>
+    </view>
+
+    <view wx:for="{{items}}" wx:key="id" class="pr__item">
+      <view class="pr__item-no">第 {{index + 1}} 页</view>
+      <image class="pr__item-img" mode="aspectFit" src="{{item.image_url}}" />
+      <view class="pr__item-label">识别文本:</view>
+      <textarea
+        class="pr__item-textarea"
+        value="{{item.ocr_text}}"
+        data-id="{{item.id}}"
+        bindinput="onTextChange"
+        auto-height
+        placeholder="(空, 可手动补充)"
+        maxlength="-1"
+      />
+      <view wx:if="{{!item.ocr_text}}" class="pr__item-warn">
+        ⚠ 此页未识别到清晰文本, 建议重拍或删除
+      </view>
+    </view>
+
+    <ai-disclaimer variant="block" />
+
+    <view class="pr__action safe-area-bottom">
+      <button
+        class="btn-primary"
+        disabled="{{saving || !items.length}}"
+        bindtap="onContinue"
+      >
+        {{ saving ? '保存中...' : '下一步:配置题型' }}
+      </button>
+    </view>
+  </block>
+</view>

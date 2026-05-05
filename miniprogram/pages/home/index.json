@@ -1,4 +1,12 @@
 {
-  "navigationBarTitleText": "首页",
-  "usingComponents": {}
+  "navigationBarTitleText": "书库",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "book-card": "/components/book-card/index",
+    "empty-state": "/components/empty-state/index",
+    "skeleton-list": "/components/skeleton-list/index",
+    "quota-badge": "/components/quota-badge/index",
+    "chip-group": "/components/chip-group/index",
+    "custom-tab-bar": "/components/custom-tab-bar/index"
+  }
 }

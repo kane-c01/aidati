@@ -1,0 +1,14 @@
+<view class="empty-state">
+  <view class="empty-state__icon">
+    <text>{{ emoji ? emoji : '🌱' }}</text>
+  </view>
+  <text class="empty-state__title">{{title}}</text>
+  <text wx:if="{{description}}" class="empty-state__desc">{{description}}</text>
+  <button
+    wx:if="{{actionText}}"
+    class="btn-primary empty-state__action"
+    bindtap="onAction"
+  >
+    {{actionText}}
+  </button>
+</view>

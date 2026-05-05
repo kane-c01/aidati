@@ -1,0 +1,71 @@
+<view class="st">
+  <view class="st__section">
+    <view class="st__title">偏好</view>
+    <view class="st__row">
+      <text class="st__label">未成年人模式</text>
+      <switch checked="{{minorMode}}" bindchange="onMinorToggle" color="#5B5BD6" />
+    </view>
+    <view class="st__row">
+      <text class="st__label">振动反馈</text>
+      <switch checked="{{vibrate}}" bindchange="onVibrateToggle" color="#5B5BD6" />
+    </view>
+  </view>
+
+  <view class="st__section">
+    <view class="st__title">数据</view>
+    <view class="st__row" bindtap="onClearCache">
+      <text class="st__label">清除缓存</text>
+      <text class="st__extra">{{cacheLabel}} ›</text>
+    </view>
+  </view>
+
+  <view class="st__section">
+    <view class="st__title">协议</view>
+    <view class="st__row" data-key="user" bindtap="onOpenAgreement">
+      <text class="st__label">用户协议</text>
+      <text class="st__arrow">›</text>
+    </view>
+    <view class="st__row" data-key="privacy" bindtap="onOpenAgreement">
+      <text class="st__label">隐私政策</text>
+      <text class="st__arrow">›</text>
+    </view>
+    <view class="st__row" data-key="minor" bindtap="onOpenAgreement">
+      <text class="st__label">儿童个人信息保护规则</text>
+      <text class="st__arrow">›</text>
+    </view>
+  </view>
+
+  <view class="st__section">
+    <view class="st__title">关于</view>
+    <view class="st__row">
+      <text class="st__label">当前版本</text>
+      <text class="st__extra">{{version}}</text>
+    </view>
+    <view class="st__row">
+      <text class="st__label">ICP 备案号</text>
+      <text class="st__extra">待补</text>
+    </view>
+    <view class="st__row">
+      <text class="st__label">公安备案</text>
+      <text class="st__extra">待补</text>
+    </view>
+    <view class="st__row">
+      <text class="st__label">当前 AI 模型</text>
+      <text class="st__extra">DeepSeek-Chat</text>
+    </view>
+  </view>
+
+  <view class="st__section" wx:if="{{userStore.isLoggedIn}}">
+    <view class="st__title">账号</view>
+    <view class="st__row" bindtap="onLogout">
+      <text class="st__label">退出登录</text>
+      <text class="st__arrow">›</text>
+    </view>
+    <view class="st__row st__row--danger" bindtap="onCancelAccount">
+      <text class="st__label">注销账号</text>
+      <text class="st__arrow">›</text>
+    </view>
+  </view>
+
+  <view style="height: 96rpx;"></view>
+</view>

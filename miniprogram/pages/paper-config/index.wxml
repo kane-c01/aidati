@@ -1,0 +1,78 @@
+<view class="pc">
+  <view class="pc__source card">
+    <view class="pc__row-title">出题来源</view>
+    <text class="pc__source-text">{{sourceLabel}}</text>
+  </view>
+
+  <view class="pc__section card">
+    <view class="pc__row-title">题型</view>
+    <view class="pc__row-hint">至少选 1 种, 多选会均衡分布</view>
+    <chip-group
+      options="{{typeOptions}}"
+      value="{{config.question_types}}"
+      multiple="{{true}}"
+      bindchange="onTypeChange"
+    />
+  </view>
+
+  <view class="pc__section card">
+    <view class="pc__row-title">难度</view>
+    <segmented
+      options="{{difficultyOptions}}"
+      value="{{config.difficulty}}"
+      bindchange="onDifficultyChange"
+    />
+  </view>
+
+  <view class="pc__section card">
+    <view class="pc__row-title">题量</view>
+    <chip-group
+      options="{{countOptions}}"
+      value="{{[countValueStr]}}"
+      multiple="{{false}}"
+      bindchange="onCountChange"
+    />
+    <view wx:if="{{customMode}}" class="pc__custom-row">
+      <input
+        class="pc__custom-input"
+        type="number"
+        placeholder="1-50"
+        value="{{config.count}}"
+        maxlength="2"
+        bindinput="onCustomCountInput"
+      />
+      <text class="font-caption text-tertiary">题</text>
+    </view>
+  </view>
+
+  <view class="pc__section card">
+    <view class="pc__row-title">补充提示(可选)</view>
+    <textarea
+      class="pc__prompt-textarea"
+      placeholder="如「重点考察人物形象,不出年代题」, 最多 500 字"
+      maxlength="500"
+      auto-height
+      value="{{config.custom_prompt}}"
+      bindinput="onPromptInput"
+    />
+  </view>
+
+  <view class="pc__est font-caption">💡 预计用时约 {{estimatedMinutes}} 分钟</view>
+
+  <ai-disclaimer variant="block" />
+
+  <view class="pc__action safe-area-bottom">
+    <view class="pc__action-quota" wx:if="{{userStore.quota}}">
+      <quota-badge used="{{userStore.quota.used_quota}}" limit="{{userStore.quota.limit}}" />
+    </view>
+    <button
+      class="btn-primary {{ canSubmit ? '' : 'disabled' }}"
+      disabled="{{!canSubmit || submitting}}"
+      bindtap="onGenerate"
+    >
+      {{ submitting ? '提交中...' : (canSubmit ? '生成试卷' : exhaustHint) }}
+    </button>
+  </view>
+
+  <view style="height: 240rpx;"></view>
+</view>

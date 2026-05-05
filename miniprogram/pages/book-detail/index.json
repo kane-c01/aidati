@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "书籍详情",
+  "usingComponents": {
+    "ai-disclaimer": "/components/ai-disclaimer/index",
+    "empty-state": "/components/empty-state/index",
+    "error-state": "/components/error-state/index",
+    "skeleton-list": "/components/skeleton-list/index"
+  }
+}

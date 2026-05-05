@@ -1,8 +1,66 @@
-<view class="container placeholder">
-  <view class="card placeholder__card">
-    <text class="placeholder__title">{{title}}</text>
-    <text class="placeholder__subtitle">{{subtitle}}</text>
-    <view class="placeholder__divider"></view>
-    <text class="placeholder__hint">{{hint}}</text>
+<view class="home">
+  <!-- 顶部搜索 + 配额 -->
+  <view class="home__head">
+    <view class="home__search">
+      <text class="home__search-icon">🔍</text>
+      <input
+        class="home__search-input"
+        placeholder="搜索书名 / 作者..."
+        value="{{keyword}}"
+        confirm-type="search"
+        bindinput="onKeywordInput"
+        bindconfirm="onSearch"
+      />
+      <text wx:if="{{keyword}}" class="home__search-clear" bindtap="onClearKeyword">✕</text>
+    </view>
+    <view wx:if="{{userStore.isLoggedIn}}" class="home__quota" bindtap="onQuotaTap">
+      <quota-badge
+        wx:if="{{userStore.quota}}"
+        used="{{userStore.quota.used_quota}}"
+        limit="{{userStore.quota.limit}}"
+      />
+    </view>
   </view>
+
+  <!-- 分类 chips -->
+  <view class="home__categories">
+    <chip-group
+      options="{{categoryOptions}}"
+      value="{{[selectedCategory]}}"
+      multiple="{{false}}"
+      bindchange="onCategoryChange"
+    />
+  </view>
+
+  <!-- 列表区 -->
+  <view wx:if="{{loading && !books.length}}" class="home__loading">
+    <skeleton-list count="5" />
+  </view>
+
+  <empty-state
+    wx:elif="{{!loading && !books.length}}"
+    title="{{ keyword ? '没有找到相关书籍' : '书库还在筹建' }}"
+    description="{{ keyword ? '要不换个关键词试试?' : '我们正在补录公版书 / 教材' }}"
+    actionText="{{ keyword ? '清除搜索' : '' }}"
+    bind:action="onClearKeyword"
+  />
+
+  <view wx:else class="home__list">
+    <view wx:if="{{recommendedBooks.length}}" class="home__section">
+      <text class="home__section-title">✨ 推荐阅读</text>
+    </view>
+    <book-card
+      wx:for="{{books}}"
+      wx:key="id"
+      book="{{item}}"
+      bind:tap="onBookTap"
+    />
+    <view class="home__loadmore" wx:if="{{books.length}}">
+      <text class="font-caption" wx:if="{{loading}}">加载中...</text>
+      <text class="font-caption" wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+    </view>
+  </view>
+
+  <view class="home__tab-spacer"></view>
+  <custom-tab-bar active="home" />
 </view>

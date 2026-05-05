@@ -1,43 +1,82 @@
-.placeholder {
+.home {
   min-height: 100vh;
+  background-color: var(--color-bg-page);
+  padding-bottom: 200rpx;
+}
+
+.home__head {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--color-bg-page);
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.home__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-md);
+  height: 80rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.home__search-icon {
+  font-size: var(--font-body);
+  color: var(--color-text-tertiary);
+}
+
+.home__search-input {
+  flex: 1;
+  font-size: var(--font-body);
+  color: var(--color-text-primary);
+}
+
+.home__search-clear {
+  width: 48rpx;
+  height: 48rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--color-text-tertiary);
 }
 
-.placeholder__card {
-  width: 100%;
+.home__quota {
+  align-self: flex-end;
+}
+
+.home__categories {
+  padding: 0 var(--space-lg) var(--space-sm);
+}
+
+.home__loading,
+.home__list {
+  padding: 0 var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.home__section {
+  margin-top: var(--space-md);
+}
+
+.home__section-title {
+  font-size: var(--font-h3);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.home__loadmore {
   text-align: center;
-  padding: 64rpx 48rpx;
+  padding: var(--space-md) 0 var(--space-xl);
 }
 
-.placeholder__title {
-  display: block;
-  font-size: 44rpx;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 16rpx;
-}
-
-.placeholder__subtitle {
-  display: block;
-  font-size: 28rpx;
-  color: #4a4a4a;
-  margin-bottom: 32rpx;
-}
-
-.placeholder__divider {
-  width: 64rpx;
-  height: 4rpx;
-  background-color: #5b5bd6;
-  margin: 0 auto 32rpx;
-  border-radius: 2rpx;
-  opacity: 0.5;
-}
-
-.placeholder__hint {
-  display: block;
-  font-size: 24rpx;
-  color: #8c8c8c;
-  line-height: 1.5;
+.home__tab-spacer {
+  height: 140rpx;
 }

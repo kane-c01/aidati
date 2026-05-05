@@ -1,0 +1,15 @@
+.quota-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  background-color: var(--color-bg-card);
+  border: 1rpx solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  font-size: var(--font-tiny);
+}
+
+.quota-badge--off {
+  border-color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
+}

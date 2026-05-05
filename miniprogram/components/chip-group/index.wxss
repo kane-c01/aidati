@@ -1,0 +1,31 @@
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 28rpx;
+  background-color: var(--color-bg-card);
+  border: 1rpx solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-body);
+  border-radius: var(--radius-pill);
+  transition: all var(--ease-quick);
+}
+
+.chip--active {
+  background-color: var(--color-primary-bg);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.chip--disabled {
+  color: var(--color-text-disabled);
+  background-color: var(--color-border-light);
+  border-color: var(--color-border-light);
+}

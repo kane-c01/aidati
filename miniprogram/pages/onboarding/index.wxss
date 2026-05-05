@@ -1,0 +1,79 @@
+.onb {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-page);
+}
+
+.onb__skip {
+  position: absolute;
+  top: 96rpx;
+  right: var(--space-lg);
+  z-index: 10;
+  font-size: var(--font-body);
+  color: var(--color-text-tertiary);
+  padding: var(--space-xs) var(--space-md);
+}
+
+.onb__swiper {
+  flex: 1;
+  height: 80vh;
+}
+
+.onb__slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 var(--space-xl);
+  gap: var(--space-md);
+}
+
+.onb__emoji {
+  font-size: 200rpx;
+  line-height: 1;
+}
+
+.onb__title {
+  font-size: var(--font-h1);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+  margin-top: var(--space-lg);
+}
+
+.onb__desc {
+  font-size: var(--font-body);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 600rpx;
+}
+
+.onb__dots {
+  display: flex;
+  justify-content: center;
+  gap: 12rpx;
+  margin-bottom: var(--space-lg);
+}
+
+.onb__dot {
+  width: 16rpx;
+  height: 16rpx;
+  background-color: var(--color-border);
+  border-radius: 50%;
+  transition: all var(--ease-quick);
+}
+
+.onb__dot--active {
+  background-color: var(--color-primary);
+  width: 40rpx;
+  border-radius: var(--radius-pill);
+}
+
+.onb__action {
+  padding: var(--space-lg) var(--space-xl);
+  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
+}

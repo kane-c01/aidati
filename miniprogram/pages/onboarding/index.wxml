@@ -1,0 +1,43 @@
+<view class="onb">
+  <view class="onb__skip" bindtap="onSkip" wx:if="{{current < slides.length - 1}}">跳过</view>
+  <swiper
+    class="onb__swiper"
+    current="{{current}}"
+    bindchange="onChange"
+    duration="300"
+    circular="{{false}}"
+  >
+    <swiper-item wx:for="{{slides}}" wx:key="key">
+      <view class="onb__slide">
+        <view class="onb__emoji">{{item.emoji}}</view>
+        <text class="onb__title">{{item.title}}</text>
+        <text class="onb__desc">{{item.desc}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <view class="onb__dots">
+    <view
+      wx:for="{{slides}}"
+      wx:key="key"
+      class="onb__dot {{ current === index ? 'onb__dot--active' : '' }}"
+    ></view>
+  </view>
+
+  <view class="onb__action">
+    <button
+      wx:if="{{current === slides.length - 1}}"
+      class="btn-primary"
+      bindtap="onStart"
+    >
+      立即开始
+    </button>
+    <button
+      wx:else
+      class="btn-ghost"
+      bindtap="onNext"
+    >
+      下一页 →
+    </button>
+  </view>
+</view>

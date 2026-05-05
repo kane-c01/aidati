@@ -1,0 +1,26 @@
+<view class="pl">
+  <view wx:if="{{state === 'loading'}}" class="pl__main">
+    <loading-stage
+      title="{{stageTitle}}"
+      hint="{{ canCancel ? '30 秒内可取消, 不扣次数' : '通常 30 秒内完成' }}"
+      progress="{{progress}}"
+    />
+    <view wx:if="{{canCancel}}" class="pl__cancel" bindtap="onCancel">
+      <text>取消</text>
+    </view>
+    <ai-disclaimer variant="block" />
+  </view>
+
+  <error-state
+    wx:elif="{{state === 'failed'}}"
+    title="生成失败"
+    description="{{ failMsg || '稍后再试一次吧' }}"
+    actionText="重新出题"
+    bind:action="onBackToConfig"
+  />
+
+  <view wx:elif="{{state === 'cancelled'}}" class="pl__main">
+    <view class="pl__big">已取消</view>
+    <button class="btn-primary" bindtap="onBackToConfig">返回配置</button>
+  </view>
+</view>

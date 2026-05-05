@@ -1,0 +1,59 @@
+<view class="pa">
+  <error-state
+    wx:if="{{errorMsg}}"
+    title="加载失败"
+    description="{{errorMsg}}"
+    actionText="重试"
+    bind:action="onRetry"
+  />
+
+  <block wx:elif="{{paper && questions.length}}">
+    <view class="pa__head">
+      <view class="pa__head-row">
+        <view class="pa__index">{{currentIndex + 1}} / {{questions.length}}</view>
+        <view class="pa__timer">⏱ {{timerLabel}}</view>
+        <view class="pa__pause" bindtap="onSaveExit">⏸</view>
+      </view>
+      <view class="pa__progress">
+        <view class="pa__progress-fill" style="width: {{progressPercent}}%;"></view>
+      </view>
+    </view>
+
+    <ai-disclaimer variant="sticky" />
+
+    <view class="pa__body">
+      <question-card
+        question="{{currentQuestion}}"
+        value="{{currentAnswer}}"
+        readonly="{{false}}"
+        showHead="{{true}}"
+        bind:change="onAnswerChange"
+      />
+    </view>
+
+    <view class="pa__footer safe-area-bottom">
+      <button
+        class="btn-secondary pa__btn-prev {{ currentIndex === 0 ? 'disabled' : '' }}"
+        disabled="{{currentIndex === 0}}"
+        bindtap="onPrev"
+      >
+        上一题
+      </button>
+      <button
+        wx:if="{{!isLast}}"
+        class="btn-primary pa__btn-next"
+        bindtap="onNext"
+      >
+        下一题
+      </button>
+      <button
+        wx:else
+        class="btn-primary pa__btn-next"
+        disabled="{{submitting}}"
+        bindtap="onSubmit"
+      >
+        {{ submitting ? '提交中...' : '提交' }}
+      </button>
+    </view>
+  </block>
+</view>

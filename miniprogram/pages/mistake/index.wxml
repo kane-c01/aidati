@@ -1,0 +1,39 @@
+<view class="mt">
+  <view class="mt__head">
+    <segmented
+      options="{{statusOptions}}"
+      value="{{filterStatus}}"
+      bindchange="onStatusChange"
+    />
+  </view>
+
+  <view wx:if="{{loading && !list.length}}" class="mt__loading">
+    <skeleton-list count="4" />
+  </view>
+
+  <empty-state
+    wx:elif="{{!loading && !list.length}}"
+    title="{{ filterStatus === 'active' ? '还没有待巩固的错题' : '还没有掌握的题目' }}"
+    description="{{ filterStatus === 'active' ? '做一套题试试看吧, 错过的会自动收录' : '答对相同题 2 次就会自动标记为已掌握' }}"
+    actionText="{{ filterStatus === 'active' ? '去出题' : '' }}"
+    bind:action="onGoHome"
+  />
+
+  <view wx:else class="mt__list">
+    <mistake-card
+      wx:for="{{list}}"
+      wx:key="id"
+      mistake="{{item}}"
+      bind:tap="onItemTap"
+    />
+    <view class="mt__loadmore">
+      <text class="font-caption" wx:if="{{loading}}">加载中...</text>
+      <text class="font-caption" wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+    </view>
+  </view>
+
+  <view wx:if="{{list.length}}" class="mt__action safe-area-bottom">
+    <button class="btn-primary" bindtap="onPractice">重做错题(全部 {{summary.active}})</button>
+  </view>
+  <view style="height: 200rpx;"></view>
+</view>

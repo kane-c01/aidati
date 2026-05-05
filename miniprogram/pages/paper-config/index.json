@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "出题配置",
+  "usingComponents": {
+    "ai-disclaimer": "/components/ai-disclaimer/index",
+    "quota-badge": "/components/quota-badge/index",
+    "chip-group": "/components/chip-group/index",
+    "segmented": "/components/segmented/index"
+  }
+}

@@ -1,0 +1,36 @@
+<view class="login">
+  <view class="login__hero">
+    <view class="login__logo">📚</view>
+    <text class="login__title">AI 智能出题学习</text>
+    <text class="login__subtitle">让 AI 帮你出一套题</text>
+  </view>
+
+  <view class="login__actions">
+    <button
+      class="btn-primary login__btn-primary {{ loading ? 'disabled' : '' }} {{ !privacyAgreed ? 'disabled' : '' }}"
+      disabled="{{loading || !privacyAgreed}}"
+      open-type="getUserInfo"
+      bindtap="onLogin"
+    >
+      {{ loading ? '正在登录...' : '微信一键登录' }}
+    </button>
+
+    <button class="btn-ghost login__btn-ghost" bindtap="onGuest">
+      先随便看看
+    </button>
+  </view>
+
+  <view class="login__privacy">
+    <view class="login__check {{ privacyAgreed ? 'login__check--on' : '' }}" bindtap="onTogglePrivacy">
+      <text wx:if="{{privacyAgreed}}">✓</text>
+    </view>
+    <view class="login__privacy-text">
+      <text class="font-caption">我已阅读并同意 </text>
+      <text class="login__privacy-link" data-key="user" bindtap="onOpenPrivacy">《用户协议》</text>
+      <text class="font-caption"> </text>
+      <text class="login__privacy-link" data-key="privacy" bindtap="onOpenPrivacy">《隐私政策》</text>
+    </view>
+  </view>
+
+  <view class="login__footer font-tiny text-tertiary">v {{version}} · {{envLabel}}</view>
+</view>

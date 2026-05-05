@@ -1,5 +1,20 @@
 {
-  "pages": ["pages/home/index"],
+  "pages": [
+    "pages/login/index",
+    "pages/onboarding/index",
+    "pages/home/index",
+    "pages/book-detail/index",
+    "pages/photo/index",
+    "pages/photo-review/index",
+    "pages/paper-config/index",
+    "pages/paper-loading/index",
+    "pages/paper-answer/index",
+    "pages/paper-result/index",
+    "pages/profile/index",
+    "pages/mistake/index",
+    "pages/settings/index",
+    "pages/feedback/index"
+  ],
   "window": {
     "navigationBarBackgroundColor": "#FAFAF7",
     "navigationBarTitleText": "AI 出题学习",

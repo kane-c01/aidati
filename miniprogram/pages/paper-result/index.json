@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "答题报告",
+  "enableShareAppMessage": true,
+  "usingComponents": {
+    "score-display": "/components/score-display/index",
+    "ai-disclaimer": "/components/ai-disclaimer/index",
+    "loading-stage": "/components/loading-stage/index",
+    "error-state": "/components/error-state/index",
+    "question-card": "/components/question-card/index"
+  }
+}

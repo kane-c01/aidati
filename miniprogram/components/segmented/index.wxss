@@ -1,0 +1,26 @@
+.segmented {
+  display: flex;
+  background-color: var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: 6rpx;
+  gap: 0;
+}
+
+.segmented__item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+  font-size: var(--font-body);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  transition: background-color var(--ease-quick), color var(--ease-quick);
+}
+
+.segmented__item--active {
+  background-color: var(--color-bg-card);
+  color: var(--color-primary);
+  font-weight: 500;
+  box-shadow: var(--shadow-card);
+}

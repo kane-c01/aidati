@@ -1,0 +1,12 @@
+<view class="mistake-card" bindtap="onTap">
+  <view class="mistake-card__row mistake-card__top">
+    <text class="mistake-card__stem ellipsis-2">{{mistake.question.stem}}</text>
+  </view>
+  <view class="mistake-card__row mistake-card__meta">
+    <text class="mistake-card__book" wx:if="{{mistake.book}}">《{{mistake.book.title}}》</text>
+    <text class="mistake-card__count">错过 {{mistake.wrong_count}} 次</text>
+  </view>
+  <view class="mistake-card__row mistake-card__time">
+    <text class="font-caption">上次错于:{{lastWrongLabel}}</text>
+  </view>
+</view>

@@ -1,0 +1,13 @@
+<view class="skeleton-list">
+  <view wx:for="{{rows}}" wx:key="*this" class="skeleton-list__row">
+    <view class="skeleton-list__avatar"></view>
+    <view class="skeleton-list__text">
+      <view class="skeleton-list__line skeleton-list__line--lg"></view>
+      <view class="skeleton-list__line skeleton-list__line--sm"></view>
+      <view wx:if="{{withTags}}" class="skeleton-list__tags">
+        <view class="skeleton-list__tag"></view>
+        <view class="skeleton-list__tag"></view>
+      </view>
+    </view>
+  </view>
+</view>

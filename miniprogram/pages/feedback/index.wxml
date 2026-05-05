@@ -1,0 +1,31 @@
+<view class="fb">
+  <view class="fb__title">告诉我们怎么做更好</view>
+  <textarea
+    class="fb__textarea"
+    placeholder="请描述你遇到的问题或建议, 至少 10 字"
+    maxlength="500"
+    auto-height
+    value="{{content}}"
+    bindinput="onInput"
+  />
+  <text class="fb__counter">{{content.length}} / 500</text>
+
+  <view class="fb__contact-row">
+    <text class="fb__label">联系方式(选填)</text>
+    <input
+      class="fb__input"
+      placeholder="微信号 / 邮箱"
+      maxlength="60"
+      value="{{contact}}"
+      bindinput="onContactInput"
+    />
+  </view>
+
+  <button
+    class="btn-primary fb__submit"
+    disabled="{{!canSubmit || submitting}}"
+    bindtap="onSubmit"
+  >
+    {{ submitting ? '提交中...' : '提交' }}
+  </button>
+</view>

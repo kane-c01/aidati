@@ -1,0 +1,38 @@
+.mistake-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border-left: 6rpx solid var(--color-danger);
+  box-shadow: var(--shadow-card);
+}
+
+.mistake-card__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.mistake-card__stem {
+  font-size: var(--font-body);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.mistake-card__meta {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  flex-wrap: wrap;
+}
+
+.mistake-card__count {
+  color: var(--color-danger);
+}
+
+.mistake-card__time {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+}

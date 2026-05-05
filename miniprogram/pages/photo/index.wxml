@@ -1,0 +1,42 @@
+<view class="photo">
+  <view class="photo__viewfinder">
+    <view class="photo__frame">
+      <text class="photo__frame-text">把书页放进框内, 光线均匀效果最好</text>
+    </view>
+    <view class="photo__hint">已拍 {{totalCount}} / {{maxPages}} 页</view>
+  </view>
+
+  <scroll-view scroll-x="{{true}}" class="photo__thumbs">
+    <view
+      wx:for="{{thumbs}}"
+      wx:key="key"
+      class="photo__thumb"
+      data-index="{{index}}"
+      data-key="{{item.key}}"
+      bindlongpress="onLongPress"
+      bindtap="onThumbTap"
+    >
+      <image class="photo__thumb-img" src="{{item.path}}" mode="aspectFill" />
+      <view class="photo__thumb-no">{{index + 1}}</view>
+      <view class="photo__thumb-remove" catchtap="onRemove" data-index="{{index}}">✕</view>
+    </view>
+    <view class="photo__thumb photo__thumb--add" wx:if="{{totalCount < maxPages}}" bindtap="onChoose">
+      <text>+</text>
+    </view>
+  </scroll-view>
+
+  <view class="photo__actions safe-area-bottom">
+    <button class="photo__action-side" bindtap="onChooseAlbum">🖼<text class="photo__action-label">相册</text></button>
+    <button class="photo__action-main {{ totalCount >= maxPages ? 'disabled' : '' }}" disabled="{{totalCount >= maxPages}}" bindtap="onChooseCamera">
+      <view class="photo__action-circle">📷</view>
+    </button>
+    <button class="photo__action-side {{ totalCount === 0 ? 'disabled' : '' }}" disabled="{{totalCount === 0 || submitting}}" bindtap="onFinish">
+      <text>{{ submitting ? '上传中' : '完成' }}</text>
+      <text class="photo__action-label">{{totalCount}} 张</text>
+    </button>
+  </view>
+
+  <ai-disclaimer variant="block" />
+  <view style="height: 200rpx;"></view>
+  <custom-tab-bar active="photo" />
+</view>

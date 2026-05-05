@@ -1,0 +1,3 @@
+<view class="quota-badge {{ exhausted ? 'quota-badge--off' : '' }}" bindtap="onTap">
+  <text class="quota-badge__text">今日剩余 {{remaining}}/{{limit}} 次</text>
+</view>

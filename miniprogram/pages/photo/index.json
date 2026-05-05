@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "拍照出题",
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index",
+    "ai-disclaimer": "/components/ai-disclaimer/index",
+    "custom-tab-bar": "/components/custom-tab-bar/index"
+  }
+}

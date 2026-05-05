@@ -1,0 +1,11 @@
+<view class="score">
+  <view
+    class="score__ring"
+    style="background: conic-gradient(var(--color-primary) {{percent}}%, var(--color-border-light) 0%);"
+  >
+    <view class="score__inner">
+      <text class="score__num">{{score}}</text>
+      <text class="score__suffix">{{suffix}}</text>
+    </view>
+  </view>
+</view>

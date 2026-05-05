@@ -1,0 +1,79 @@
+<view wx:if="{{loading}}" class="bd__loading">
+  <skeleton-list count="3" />
+</view>
+
+<error-state
+  wx:elif="{{errorMsg}}"
+  title="加载失败"
+  description="{{errorMsg}}"
+  actionText="重新加载"
+  bind:action="onRetry"
+/>
+
+<view wx:elif="{{book}}" class="bd">
+  <!-- 顶部封面 + 标题 -->
+  <view class="bd__hero">
+    <image
+      class="bd__cover"
+      mode="aspectFill"
+      src="{{book.cover_url || '/assets/cover-placeholder.png'}}"
+    />
+    <text class="bd__title">《{{book.title}}》</text>
+    <text class="bd__author">{{book.author}}{{book.category ? ' · ' + book.category : ''}}</text>
+    <view class="bd__tags">
+      <view wx:if="{{book.is_recommended}}" class="bd__tag bd__tag--primary">推荐</view>
+      <view wx:for="{{book.tags}}" wx:key="*this" class="bd__tag">{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 简介 -->
+  <view class="bd__section card">
+    <text class="bd__section-title">简介</text>
+    <text class="{{ descExpanded ? '' : 'ellipsis-3' }} bd__desc">
+      {{book.description || '暂无简介'}}
+    </text>
+    <view
+      wx:if="{{book.description && book.description.length > 80}}"
+      class="bd__expand"
+      bindtap="onToggleDesc"
+    >
+      {{ descExpanded ? '收起' : '展开' }}
+    </view>
+  </view>
+
+  <!-- 章节 -->
+  <view class="bd__section card">
+    <text class="bd__section-title">章节{{ chapters.length ? '(共 ' + chapters.length + ' 章)' : '' }}</text>
+    <empty-state
+      wx:if="{{!chapters.length}}"
+      title="暂无章节信息"
+      description="可选「整本书」出题"
+    />
+    <view wx:else class="bd__chapters">
+      <view
+        wx:for="{{chapters}}"
+        wx:key="id"
+        class="bd__chapter {{ selectedChapterIds[item.id] ? 'bd__chapter--active' : '' }}"
+        data-id="{{item.id}}"
+        bindtap="onChapterTap"
+      >
+        <view class="bd__chapter-tick">{{ selectedChapterIds[item.id] ? '✓' : '' }}</view>
+        <view class="bd__chapter-body">
+          <text class="bd__chapter-title">第{{item.order_no}}章 · {{item.title}}</text>
+          <text wx:if="{{item.start_page}}" class="bd__chapter-page">{{item.start_page}}-{{item.end_page}} 页</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <ai-disclaimer variant="block" />
+
+  <view class="bd__action safe-area-bottom">
+    <button
+      class="btn-primary"
+      bindtap="onStartGenerate"
+    >
+      {{ selectedCount > 0 ? '按选中章节出题(' + selectedCount + ')' : '整本书出题' }}
+    </button>
+  </view>
+</view>

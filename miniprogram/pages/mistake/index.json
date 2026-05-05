@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "错题本",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "mistake-card": "/components/mistake-card/index",
+    "empty-state": "/components/empty-state/index",
+    "skeleton-list": "/components/skeleton-list/index",
+    "segmented": "/components/segmented/index"
+  }
+}

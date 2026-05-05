@@ -1,0 +1,77 @@
+<view class="qc">
+  <!-- 顶部 chip 行 -->
+  <view class="qc__head" wx:if="{{showHead}}">
+    <view class="qc__tag qc__tag--ai">🤖 AI 生成</view>
+    <view class="qc__tag qc__tag--diff">{{difficultyLabel}}</view>
+    <view class="qc__tag">{{typeLabel}}</view>
+  </view>
+
+  <!-- 题干 -->
+  <view class="qc__stem">
+    <text class="qc__order" wx:if="{{showOrder}}">{{question.order_no}}.</text>
+    <text>{{question.stem}}</text>
+  </view>
+
+  <!-- 单选 / 多选 -->
+  <view
+    wx:if="{{question.type === 'single' || question.type === 'multiple'}}"
+    class="qc__options"
+  >
+    <view
+      wx:for="{{question.options}}"
+      wx:key="id"
+      class="qc__option {{ selectedMap[item.id] ? 'qc__option--active' : '' }} {{ readonly ? 'qc__option--readonly' : '' }}"
+      data-id="{{item.id}}"
+      bindtap="onSelectOption"
+    >
+      <view class="qc__option-letter">{{item.id}}</view>
+      <view class="qc__option-text">{{item.text}}</view>
+    </view>
+  </view>
+
+  <!-- 判断 -->
+  <view wx:elif="{{question.type === 'judge'}}" class="qc__judge">
+    <view
+      class="qc__judge-btn {{ selectedJudge === true ? 'qc__judge-btn--active qc__judge-btn--ok' : '' }}"
+      data-v="true"
+      bindtap="onSelectJudge"
+    >
+      ✓ 对
+    </view>
+    <view
+      class="qc__judge-btn {{ selectedJudge === false ? 'qc__judge-btn--active qc__judge-btn--ng' : '' }}"
+      data-v="false"
+      bindtap="onSelectJudge"
+    >
+      ✗ 错
+    </view>
+  </view>
+
+  <!-- 填空 -->
+  <view wx:elif="{{question.type === 'fill'}}" class="qc__fill">
+    <input
+      wx:if="{{!readonly}}"
+      class="qc__fill-input"
+      placeholder="在此填写答案"
+      value="{{textValue}}"
+      bindinput="onTextInput"
+      maxlength="200"
+    />
+    <view wx:else class="qc__fill-readonly">{{textValue || '(未作答)'}}</view>
+  </view>
+
+  <!-- 简答 -->
+  <view wx:elif="{{question.type === 'short_answer'}}" class="qc__short">
+    <textarea
+      wx:if="{{!readonly}}"
+      class="qc__short-textarea"
+      placeholder="请简述你的答案,建议 60-200 字"
+      value="{{textValue}}"
+      auto-height
+      maxlength="2000"
+      bindinput="onTextInput"
+    />
+    <view wx:else class="qc__short-readonly">{{textValue || '(未作答)'}}</view>
+    <text class="qc__short-counter">{{textValue.length || 0}} 字</text>
+  </view>
+</view>

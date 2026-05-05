@@ -1,0 +1,79 @@
+<view class="pr">
+  <view wx:if="{{state === 'loading'}}" class="pr__loading">
+    <loading-stage
+      title="AI 正在批改中..."
+      hint="主观题大约每题 5 秒"
+      progress="{{progress}}"
+    />
+    <ai-disclaimer variant="block" />
+  </view>
+
+  <error-state
+    wx:elif="{{state === 'failed'}}"
+    title="批改失败"
+    description="{{failMsg || '网络似乎不太顺畅, 请重试'}}"
+    actionText="重新加载"
+    bind:action="onRetry"
+  />
+
+  <block wx:elif="{{state === 'graded' && result}}">
+    <view class="pr__hero">
+      <score-display score="{{result.summary.total_score}}" max="{{result.summary.max_score}}" suffix="分" />
+      <view class="pr__hero-meta">
+        <text>正确率 {{accuracyLabel}}</text>
+        <text wx:if="{{rankLabel}}">击败了 {{rankLabel}} 的同书读者</text>
+        <text>用时 {{durationLabel}}</text>
+      </view>
+      <ai-disclaimer variant="inline" />
+    </view>
+
+    <view class="pr__list">
+      <view class="pr__list-title">题目解析</view>
+      <view
+        wx:for="{{viewQuestions}}"
+        wx:key="id"
+        class="pr__qcard {{ item.is_correct ? 'pr__qcard--ok' : 'pr__qcard--ng' }}"
+      >
+        <view class="pr__qcard-row" data-id="{{item.id}}" bindtap="onToggle">
+          <text>{{ index + 1 }}. {{ item.is_correct ? '✓ 对' : '✗ 错' }} · {{item.typeLabel}}</text>
+          <text class="pr__qcard-arrow">{{ expandedMap[item.id] ? '▴' : '▾' }}</text>
+        </view>
+        <view wx:if="{{expandedMap[item.id]}}" class="pr__qcard-body">
+          <question-card question="{{item}}" value="{{item.user_answer}}" readonly="{{true}}" showHead="{{false}}" />
+
+          <view class="pr__answer-row" wx:if="{{!item.is_correct}}">
+            <text class="pr__answer-label">正确答案:</text>
+            <text class="pr__answer-correct">{{ item.correctAnswerText }}</text>
+          </view>
+
+          <view wx:if="{{item.explanation}}" class="pr__expl">
+            <text class="pr__expl-label">解析:</text>
+            <text class="pr__expl-text">{{item.explanation}}</text>
+          </view>
+
+          <view wx:if="{{item.ai_feedback}}" class="pr__feedback">
+            <text class="pr__feedback-label">AI 评分反馈:</text>
+            <text class="pr__feedback-text">{{item.ai_feedback}}</text>
+            <text wx:if="{{item.confidenceLowLabel}}" class="pr__feedback-warn">
+              {{item.confidenceLowLabel}}
+            </text>
+          </view>
+
+          <view wx:if="{{item.knowledge_points && item.knowledge_points.length}}" class="pr__kp">
+            <text wx:for="{{item.knowledge_points}}" wx:for-item="kp" wx:key="*this" class="pr__kp-tag">
+              {{kp}}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="pr__footer safe-area-bottom">
+      <text class="font-caption text-tertiary">错题已自动收录</text>
+      <view class="pr__footer-row">
+        <button class="btn-secondary" bindtap="onGoMistake">看错题本</button>
+        <button class="btn-primary" bindtap="onGoConfig">再来一套</button>
+      </view>
+    </view>
+  </block>
+</view>

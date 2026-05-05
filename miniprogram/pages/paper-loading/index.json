@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "AI 出题中",
+  "usingComponents": {
+    "loading-stage": "/components/loading-stage/index",
+    "ai-disclaimer": "/components/ai-disclaimer/index",
+    "error-state": "/components/error-state/index"
+  }
+}

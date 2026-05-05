@@ -1,0 +1,12 @@
+<view class="loading-stage">
+  <view class="loading-stage__dots">
+    <view class="loading-stage__dot loading-stage__dot--1"></view>
+    <view class="loading-stage__dot loading-stage__dot--2"></view>
+    <view class="loading-stage__dot loading-stage__dot--3"></view>
+  </view>
+  <text class="loading-stage__title">{{title}}</text>
+  <view class="loading-stage__bar">
+    <view class="loading-stage__bar-fill" style="width: {{progress}}%;"></view>
+  </view>
+  <text class="loading-stage__hint">{{hint}}</text>
+</view>
