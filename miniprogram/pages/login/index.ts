@@ -123,17 +123,19 @@ Page({
 });
 
 function getWxCode(): Promise<string> {
+  // dev 环境强制走 mock-* code, 后端 wechat.service 已支持 mock-* 短路;
+  // 真机 / 体验版 / 正式版才走真正的 wx.login -> jscode2session
+  if (env.DEBUG) {
+    const id = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
+    return Promise.resolve(`mock-${id}`);
+  }
   return new Promise((resolve, reject) => {
     wx.login({
       success: (res) => {
         if (res.code) return resolve(res.code);
-        if (env.DEBUG) return resolve('mock-001');
         reject(new Error('微信 code 获取失败'));
       },
-      fail: (err) => {
-        if (env.DEBUG) return resolve('mock-001');
-        reject(err);
-      },
+      fail: (err) => reject(err),
     });
   });
 }

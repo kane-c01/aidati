@@ -2,83 +2,200 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 96rpx var(--space-xl) var(--space-xl);
+  padding: 0 var(--space-xl) var(--space-xl);
   background-color: var(--color-bg-page);
   box-sizing: border-box;
 }
 
+/* ── Hero ── */
 .login__hero {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-md);
+  gap: 0;
+  padding-top: 80rpx;
   padding-bottom: var(--space-xl);
 }
 
-.login__logo {
-  font-size: 160rpx;
-  line-height: 1;
-  margin-bottom: var(--space-md);
+/* ── Logo ── */
+.login__logo-wrap {
+  margin-bottom: 40rpx;
 }
 
+.login__logo {
+  width: 120rpx;
+  height: 120rpx;
+  background-color: var(--color-primary);
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.login__logo-book {
+  width: 52rpx;
+  height: 60rpx;
+  border: 4rpx solid rgba(255,255,255,0.9);
+  border-radius: 4rpx 10rpx 10rpx 4rpx;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.login__logo-spine {
+  position: absolute;
+  left: 13rpx;
+  top: 8rpx;
+  bottom: 8rpx;
+  width: 3rpx;
+  background: rgba(255,255,255,0.9);
+  border-radius: 2rpx;
+}
+
+.login__logo-page {
+  position: absolute;
+  left: 22rpx;
+  right: 6rpx;
+  top: 16rpx;
+  height: 3rpx;
+  background: rgba(255,255,255,0.7);
+  border-radius: 2rpx;
+  box-shadow: 0 10rpx 0 rgba(255,255,255,0.5);
+}
+
+.login__logo-badge {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  background-color: var(--color-bg-card);
+  color: var(--color-primary);
+  font-size: 18rpx;
+  font-weight: 700;
+  padding: 4rpx 10rpx;
+  border-radius: 20rpx;
+  border: 2rpx solid var(--color-primary-bg);
+  line-height: 1.4;
+}
+
+/* ── 标题 ── */
 .login__title {
-  font-size: var(--font-display);
+  font-size: 52rpx;
   font-weight: 700;
   color: var(--color-text-primary);
+  letter-spacing: 2rpx;
+  margin-bottom: 12rpx;
 }
 
 .login__subtitle {
   font-size: var(--font-body);
   color: var(--color-text-tertiary);
+  margin-bottom: 48rpx;
 }
 
+/* ── 特性列表 ── */
+.login__features {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  align-self: flex-start;
+  width: 100%;
+  padding: 0 16rpx;
+}
+
+.login__feature {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.login__feature-dot {
+  width: 8rpx;
+  height: 8rpx;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── 操作区 ── */
 .login__actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  margin-bottom: var(--space-xl);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
-.login__btn-primary {
+.login__btn-wx {
   width: 100%;
   height: 96rpx;
   font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
 }
 
-.login__btn-ghost {
+.login__wx-icon {
+  width: 40rpx;
+  height: 40rpx;
+  border: 3rpx solid rgba(255,255,255,0.8);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.login__wx-icon::before {
+  content: '';
+  position: absolute;
+  width: 16rpx;
+  height: 12rpx;
+  border: 2rpx solid rgba(255,255,255,0.8);
+  border-radius: 8rpx;
+  top: 7rpx;
+  left: 7rpx;
+  box-sizing: border-box;
+}
+
+.login__btn-guest {
   width: 100%;
+  height: 80rpx;
   background-color: transparent;
-  color: var(--color-primary);
+  color: var(--color-text-tertiary);
   font-size: var(--font-body);
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.login__btn-ghost::after {
+.login__btn-guest::after {
   border: none;
 }
 
+/* ── 隐私勾选 ── */
 .login__privacy {
   display: flex;
   align-items: flex-start;
   gap: var(--space-sm);
-  padding: var(--space-md);
+  padding: var(--space-xs) 0;
 }
 
 .login__check {
   width: 36rpx;
   height: 36rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 6rpx;
+  border-radius: 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-inverse);
-  font-size: 24rpx;
   flex-shrink: 0;
+  margin-top: 2rpx;
   transition: all var(--ease-quick);
+  box-sizing: border-box;
 }
 
 .login__check--on {
@@ -86,11 +203,19 @@
   border-color: var(--color-primary);
 }
 
+.login__check-mark {
+  width: 18rpx;
+  height: 12rpx;
+  border-left: 3rpx solid #fff;
+  border-bottom: 3rpx solid #fff;
+  transform: rotate(-45deg) translateY(-3rpx);
+}
+
 .login__privacy-text {
   flex: 1;
   font-size: var(--font-caption);
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .login__privacy-link {
@@ -98,7 +223,10 @@
   font-size: var(--font-caption);
 }
 
+/* ── Footer ── */
 .login__footer {
   text-align: center;
-  margin-top: var(--space-xl);
+  font-size: var(--font-tiny);
+  color: var(--color-text-disabled);
+  padding: var(--space-sm) 0;
 }

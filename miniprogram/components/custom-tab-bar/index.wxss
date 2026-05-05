@@ -7,7 +7,7 @@
   display: flex;
   background-color: var(--color-bg-card);
   border-top: 1rpx solid var(--color-border-light);
-  padding-top: 12rpx;
+  padding-top: 14rpx;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -17,29 +17,129 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4rpx;
+  gap: 6rpx;
   color: var(--color-text-tertiary);
-  font-size: var(--font-tiny);
-  padding-bottom: 12rpx;
+  padding-bottom: 14rpx;
   transition: color var(--ease-quick);
-}
-
-.tab-bar__icon {
-  font-size: 44rpx;
-  line-height: 1;
-  filter: grayscale(40%);
 }
 
 .tab-bar__item--active {
   color: var(--color-primary);
+}
+
+.tab-bar__item--active .tab-bar__text {
   font-weight: 500;
 }
 
-.tab-bar__item--active .tab-bar__icon {
-  filter: none;
-  transform: translateY(-2rpx);
+.tab-bar__icon-wrap {
+  width: 48rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tab-bar__text {
   font-size: var(--font-tiny);
+}
+
+/* ── 书本图标 ── */
+.tab-icon--book {
+  width: 38rpx;
+  height: 36rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 3rpx 8rpx 8rpx 3rpx;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.tab-icon__book-spine {
+  position: absolute;
+  left: 9rpx;
+  top: 5rpx;
+  bottom: 5rpx;
+  width: 2rpx;
+  background: currentColor;
+  border-radius: 2rpx;
+}
+
+.tab-icon__book-line {
+  position: absolute;
+  left: 16rpx;
+  right: 6rpx;
+  height: 2rpx;
+  background: currentColor;
+  border-radius: 2rpx;
+  opacity: 0.7;
+}
+
+.tab-icon__book-line--1 {
+  top: 10rpx;
+}
+
+.tab-icon__book-line--2 {
+  top: 18rpx;
+}
+
+/* ── 相机图标 ── */
+.tab-icon--camera {
+  width: 44rpx;
+  height: 34rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 6rpx;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.tab-icon__lens {
+  width: 16rpx;
+  height: 16rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+.tab-icon__bump {
+  width: 14rpx;
+  height: 6rpx;
+  border: 3rpx solid currentColor;
+  border-bottom: none;
+  border-radius: 6rpx 6rpx 0 0;
+  position: absolute;
+  top: -6rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
+/* ── 人物图标 ── */
+.tab-icon--person {
+  width: 38rpx;
+  height: 40rpx;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tab-icon__head {
+  width: 20rpx;
+  height: 20rpx;
+  border: 3rpx solid currentColor;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.tab-icon__body {
+  width: 34rpx;
+  height: 16rpx;
+  border: 3rpx solid currentColor;
+  border-bottom: none;
+  border-radius: 20rpx 20rpx 0 0;
+  margin-top: 4rpx;
+  box-sizing: border-box;
 }

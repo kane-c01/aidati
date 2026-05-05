@@ -4,7 +4,13 @@
     data-key="home"
     bindtap="onTap"
   >
-    <text class="tab-bar__icon">📚</text>
+    <view class="tab-bar__icon-wrap">
+      <view class="tab-icon tab-icon--book">
+        <view class="tab-icon__book-spine"></view>
+        <view class="tab-icon__book-line tab-icon__book-line--1"></view>
+        <view class="tab-icon__book-line tab-icon__book-line--2"></view>
+      </view>
+    </view>
     <text class="tab-bar__text">书库</text>
   </view>
   <view
@@ -12,7 +18,12 @@
     data-key="photo"
     bindtap="onTap"
   >
-    <text class="tab-bar__icon">📷</text>
+    <view class="tab-bar__icon-wrap">
+      <view class="tab-icon tab-icon--camera">
+        <view class="tab-icon__lens"></view>
+        <view class="tab-icon__bump"></view>
+      </view>
+    </view>
     <text class="tab-bar__text">拍照</text>
   </view>
   <view
@@ -20,7 +31,12 @@
     data-key="profile"
     bindtap="onTap"
   >
-    <text class="tab-bar__icon">👤</text>
+    <view class="tab-bar__icon-wrap">
+      <view class="tab-icon tab-icon--person">
+        <view class="tab-icon__head"></view>
+        <view class="tab-icon__body"></view>
+      </view>
+    </view>
     <text class="tab-bar__text">我的</text>
   </view>
 </view>

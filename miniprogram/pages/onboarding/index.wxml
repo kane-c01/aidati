@@ -7,11 +7,58 @@
     duration="300"
     circular="{{false}}"
   >
-    <swiper-item wx:for="{{slides}}" wx:key="key">
+    <!-- 屏 1：拍照出题 -->
+    <swiper-item>
       <view class="onb__slide">
-        <view class="onb__emoji">{{item.emoji}}</view>
-        <text class="onb__title">{{item.title}}</text>
-        <text class="onb__desc">{{item.desc}}</text>
+        <view class="onb__illus onb__illus--camera">
+          <view class="onb__illus-phone">
+            <view class="onb__illus-screen">
+              <view class="onb__illus-frame"></view>
+            </view>
+          </view>
+          <view class="onb__illus-sparks">
+            <view class="onb__illus-spark onb__illus-spark--1"></view>
+            <view class="onb__illus-spark onb__illus-spark--2"></view>
+            <view class="onb__illus-spark onb__illus-spark--3"></view>
+          </view>
+        </view>
+        <text class="onb__title">随手一拍，AI 帮你出题</text>
+        <text class="onb__desc">连拍最多 20 页，OCR 自动识别文字</text>
+      </view>
+    </swiper-item>
+    <!-- 屏 2：书库搜索 -->
+    <swiper-item>
+      <view class="onb__slide">
+        <view class="onb__illus onb__illus--library">
+          <view class="onb__illus-shelf">
+            <view class="onb__illus-book onb__illus-book--tall" style="background-color:#5B5BD6;"></view>
+            <view class="onb__illus-book onb__illus-book--short" style="background-color:#4A6FA5;"></view>
+            <view class="onb__illus-book onb__illus-book--mid" style="background-color:#C8C8F0;"></view>
+            <view class="onb__illus-book onb__illus-book--tall" style="background-color:#EEEEFC;border:2rpx solid #C8C8F0;"></view>
+            <view class="onb__illus-book onb__illus-book--short" style="background-color:#5B5BD6;opacity:0.6;"></view>
+          </view>
+          <view class="onb__illus-shelf-base"></view>
+          <view class="onb__illus-badge">100+</view>
+        </view>
+        <text class="onb__title">书库一搜，即学即测</text>
+        <text class="onb__desc">覆盖文学、考试、教材等常见品类</text>
+      </view>
+    </swiper-item>
+    <!-- 屏 3：批改收录 -->
+    <swiper-item>
+      <view class="onb__slide">
+        <view class="onb__illus onb__illus--result">
+          <view class="onb__illus-circle">
+            <view class="onb__illus-score">85</view>
+            <view class="onb__illus-score-sub">分</view>
+          </view>
+          <view class="onb__illus-tags">
+            <view class="onb__illus-tag onb__illus-tag--right">答对 8 题</view>
+            <view class="onb__illus-tag onb__illus-tag--wrong">待巩固 2 题</view>
+          </view>
+        </view>
+        <text class="onb__title">AI 智能批改，错题自动收录</text>
+        <text class="onb__desc">不只对错，AI 还告诉你为什么错</text>
       </view>
     </swiper-item>
   </swiper>
@@ -34,10 +81,10 @@
     </button>
     <button
       wx:else
-      class="btn-ghost"
+      class="btn-ghost onb__btn-next"
       bindtap="onNext"
     >
-      下一页 →
+      下一屏
     </button>
   </view>
 </view>

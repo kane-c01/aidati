@@ -1,36 +1,59 @@
 <view class="login">
   <view class="login__hero">
-    <view class="login__logo">📚</view>
-    <text class="login__title">AI 智能出题学习</text>
-    <text class="login__subtitle">让 AI 帮你出一套题</text>
+    <!-- 品牌图标：书本 + AI 标记 -->
+    <view class="login__logo-wrap">
+      <view class="login__logo">
+        <view class="login__logo-book">
+          <view class="login__logo-spine"></view>
+          <view class="login__logo-page"></view>
+        </view>
+        <view class="login__logo-badge">AI</view>
+      </view>
+    </view>
+    <text class="login__title">AI 智能出题</text>
+    <text class="login__subtitle">拍书页 · AI 出题 · 自动批改</text>
+    <!-- 三个特性描述 -->
+    <view class="login__features">
+      <view class="login__feature">
+        <view class="login__feature-dot"></view>
+        <text>OCR 拍照识别</text>
+      </view>
+      <view class="login__feature">
+        <view class="login__feature-dot"></view>
+        <text>AI 智能出题批改</text>
+      </view>
+      <view class="login__feature">
+        <view class="login__feature-dot"></view>
+        <text>错题自动收录</text>
+      </view>
+    </view>
   </view>
 
   <view class="login__actions">
     <button
-      class="btn-primary login__btn-primary {{ loading ? 'disabled' : '' }} {{ !privacyAgreed ? 'disabled' : '' }}"
+      class="btn-primary login__btn-wx {{ loading ? 'disabled' : '' }} {{ !privacyAgreed ? 'disabled' : '' }}"
       disabled="{{loading || !privacyAgreed}}"
       open-type="getUserInfo"
       bindtap="onLogin"
     >
-      {{ loading ? '正在登录...' : '微信一键登录' }}
+      <view class="login__wx-icon"></view>
+      <text>{{ loading ? '正在登录...' : '微信一键登录' }}</text>
     </button>
 
-    <button class="btn-ghost login__btn-ghost" bindtap="onGuest">
-      先随便看看
-    </button>
+    <button class="login__btn-guest" bindtap="onGuest">先随便看看</button>
   </view>
 
   <view class="login__privacy">
     <view class="login__check {{ privacyAgreed ? 'login__check--on' : '' }}" bindtap="onTogglePrivacy">
-      <text wx:if="{{privacyAgreed}}">✓</text>
+      <view wx:if="{{privacyAgreed}}" class="login__check-mark"></view>
     </view>
     <view class="login__privacy-text">
-      <text class="font-caption">我已阅读并同意 </text>
+      <text class="font-caption">阅读并同意 </text>
       <text class="login__privacy-link" data-key="user" bindtap="onOpenPrivacy">《用户协议》</text>
-      <text class="font-caption"> </text>
+      <text class="font-caption"> 与 </text>
       <text class="login__privacy-link" data-key="privacy" bindtap="onOpenPrivacy">《隐私政策》</text>
     </view>
   </view>
 
-  <view class="login__footer font-tiny text-tertiary">v {{version}} · {{envLabel}}</view>
+  <view class="login__footer">v {{version}}</view>
 </view>
