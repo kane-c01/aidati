@@ -8,12 +8,17 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { LoggerInterceptor } from './common/interceptors/logger.interceptor';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { AiServiceModule } from './infra/ai-service/ai-service.module';
 import { HealthModule } from './infra/health/health.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { QueueModule } from './infra/queue/queue.module';
 import { RedisModule } from './infra/redis/redis.module';
 import { StorageModule } from './infra/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { MistakeModule } from './modules/mistake/mistake.module';
+import { PaperModule } from './modules/paper/paper.module';
 import { PhotoModule } from './modules/photo/photo.module';
+import { QuotaModule } from './modules/quota/quota.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -36,11 +41,16 @@ import { UserModule } from './modules/user/user.module';
     PrismaModule,
     RedisModule,
     StorageModule,
+    QueueModule,
+    AiServiceModule,
+    QuotaModule,
     HealthModule,
     AuthModule,
     UserModule,
     UploadModule,
     PhotoModule,
+    MistakeModule,
+    PaperModule,
   ],
   providers: [
     {

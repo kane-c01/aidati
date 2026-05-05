@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     # LLM 提供商
-    llm_primary_provider: str = "deepseek"  # deepseek | qwen | glm
+    llm_primary_provider: str = "deepseek"  # deepseek | qwen | glm | mock
+    llm_backup_providers: list[str] = ["qwen", "glm"]
+    """无 API key 时强制走 mock(本地调试默认 true)"""
+    llm_force_mock: bool = True
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     qwen_api_key: str = ""
@@ -33,13 +36,15 @@ class Settings(BaseSettings):
     glm_api_key: str = ""
     glm_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
 
-    # 微信内容安全 API
+    # 微信内容安全 API(M6 接入)
     wechat_appid: str = ""
     wechat_secret: str = ""
 
     # 与业务后端的内部通信
     backend_callback_url: str = "http://localhost:3000/v1"
-    internal_token: str = ""
+    """业务后端 → ai-service 通过 X-Internal-Token 头鉴权
+    生产建议从 KMS 注入, 与后端共享同一密钥"""
+    internal_token: str = "dev-internal-token-please-change"
 
 
 @lru_cache(maxsize=1)

@@ -19,6 +19,8 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.routers import generate as generate_router
+from app.routers import grade as grade_router
 
 logger = structlog.get_logger()
 
@@ -32,6 +34,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         env=settings.env,
         port=settings.port,
         version=settings.version,
+        llm_force_mock=settings.llm_force_mock,
     )
     yield
     logger.info("ai_service.shutdown")
@@ -46,6 +49,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(generate_router.router)
+app.include_router(grade_router.router)
+
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
@@ -58,12 +64,18 @@ async def healthz() -> dict[str, str]:
 
 @app.get("/readyz")
 async def readyz() -> dict[str, object]:
-    """依赖就绪探针 - M3 起会真实检查 Redis / LLM 通道"""
+    """依赖就绪探针 - 检查 LLM 主链是否可用"""
+    from app.services.llm_client import get_llm_client
+
+    client = get_llm_client()
+    primary = client.chain.providers[0] if client.chain.providers else None
+    llm_ok = await primary.health() if primary else False
     return {
-        "status": "ok",
+        "status": "ok" if llm_ok else "degraded",
         "deps": {
             "redis": "pending",
-            "llm": "pending",
+            "llm": "ok" if llm_ok else "fail",
+            "llm_primary": primary.name if primary else "none",
         },
     }
 

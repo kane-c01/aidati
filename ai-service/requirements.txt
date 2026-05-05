@@ -9,3 +9,6 @@ redis==5.2.1
 structlog==24.4.0
 tenacity==9.0.0
 orjson==3.10.13
+# M3 出题/批改 LLM 链路
+openai==1.59.3
+jsonschema==4.23.0
