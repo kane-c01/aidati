@@ -17,6 +17,6 @@ export class FeedbackDto {
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(9)
-  @IsUrl({ require_protocol: true }, { each: true })
+  @IsUrl({ require_protocol: true, require_tld: false }, { each: true })
   screenshots?: string[];
 }

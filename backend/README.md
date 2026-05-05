@@ -55,7 +55,8 @@ curl http://localhost:3000/version
 
 - **M0**:✅ 项目脚手架 + 健康检查 + Prisma 占位
 - **M1**:✅ 数据库 schema(14 张 MVP 表)+ 微信登录 + JWT + 用户模块 + 全局基座
-- **M2**:⏳ 上传 + OCR
+- **M2**:✅ 文件上传(MinIO/COS S3 直传)+ 拍照集 + 微信 OCR 主路径
+- **M3**:⏳ AI 出题 + 批改(核心)
 
 ### M1 已实现接口(均已通过本地 e2e 验证)
 
@@ -72,6 +73,14 @@ curl http://localhost:3000/version
 | `/v1/user/me/privacy` | GET | ✅ | 隐私协议状态 |
 | `/v1/user/me/privacy/agree` | POST | ✅ | 重新同意隐私协议 |
 | `/v1/feedback` | POST | ✅ | 用户反馈(暂落 admin_log)|
+| `/v1/upload/policy` | GET | ✅ | 申请预签直传(MinIO/COS, scene=photo\|cover\|pdf) |
+| `/v1/upload` | POST | ✅ | multipart 后端转存(兜底) |
+| `/v1/photos` | POST | ✅ | 直传后绑定:首次自动建 photo_set, 同时校验 OSS 对象存在 |
+| `/v1/photos/:id` | PATCH/DELETE | ✅ | 重拍 / 删图 |
+| `/v1/photo-sets/:id/reorder` | PATCH | ✅ | 拍照集排序 |
+| `/v1/photo-sets/:id/ocr` | POST | ✅ | 触发 OCR(mode=`wechat`/`mock`/`tencent`-pending) |
+| `/v1/photo-sets/:id/ocr` | GET | ✅ | 状态 + 合并文本 + 每张图的 ocr_text |
+| `/v1/photo-sets/:id/ocr` | PATCH | ✅ | 客户端微信 OCR 写回 / 用户校对 |
 
 ### 本地启动检查清单
 

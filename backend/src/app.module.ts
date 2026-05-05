@@ -11,7 +11,10 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { HealthModule } from './infra/health/health.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { RedisModule } from './infra/redis/redis.module';
+import { StorageModule } from './infra/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { PhotoModule } from './modules/photo/photo.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { UserModule } from './modules/user/user.module';
 
 /**
@@ -32,9 +35,12 @@ import { UserModule } from './modules/user/user.module';
     }),
     PrismaModule,
     RedisModule,
+    StorageModule,
     HealthModule,
     AuthModule,
     UserModule,
+    UploadModule,
+    PhotoModule,
   ],
   providers: [
     {

@@ -8,7 +8,7 @@ class UserInfoDto {
   nickname?: string;
 
   @IsOptional()
-  @IsUrl({ require_protocol: true })
+  @IsUrl({ require_protocol: true, require_tld: false })
   @MaxLength(512)
   avatar_url?: string;
 }
