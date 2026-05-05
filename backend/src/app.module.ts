@@ -15,6 +15,7 @@ import { QueueModule } from './infra/queue/queue.module';
 import { RedisModule } from './infra/redis/redis.module';
 import { StorageModule } from './infra/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BookModule } from './modules/book/book.module';
 import { MistakeModule } from './modules/mistake/mistake.module';
 import { PaperModule } from './modules/paper/paper.module';
 import { PhotoModule } from './modules/photo/photo.module';
@@ -49,6 +50,7 @@ import { UserModule } from './modules/user/user.module';
     UserModule,
     UploadModule,
     PhotoModule,
+    BookModule,
     MistakeModule,
     PaperModule,
   ],
