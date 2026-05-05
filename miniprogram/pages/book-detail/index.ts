@@ -7,8 +7,7 @@
  *  - 点底部按钮 → 把 source/书 ID/章节 ID 送给 paperStore, 跳 paper-config
  */
 
-import { bookService } from '../../services';
-import { HttpError } from '../../services';
+import { bookService, HttpError } from '../../services/index';
 import { paperStore } from '../../stores/paper';
 import { track } from '../../utils/tracker';
 import type { Book, Chapter } from '../../types/domain';

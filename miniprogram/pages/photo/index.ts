@@ -12,7 +12,7 @@
  * 注意:wx.uploadFile 不能加 Authorization 头, 但 POST /photos 走 http 客户端正常带头。
  */
 
-import { ContentBlockedError, HttpError, photoService, uploadService } from '../../services';
+import { ContentBlockedError, HttpError, photoService, uploadService } from '../../services/index';
 import { MAX_PHOTO_PAGES } from '../../config/constants';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';
 import { photoStore } from '../../stores/photo';

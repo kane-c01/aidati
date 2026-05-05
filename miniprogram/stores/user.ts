@@ -11,7 +11,7 @@
 import { observable, runInAction } from 'mobx-miniprogram';
 
 import { STORAGE_KEYS } from '../config/constants';
-import { authService, userService, bindTokenAccessor } from '../services';
+import { authService, userService, bindTokenAccessor } from '../services/index';
 import { setTrackUserGetter } from '../utils/tracker';
 import { getStorage, removeStorage, setStorage } from '../utils/storage';
 import type { CurrentUser, QuotaSnapshot, UserStats } from '../types/domain';

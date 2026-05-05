@@ -5,7 +5,7 @@
  */
 
 import { PAPER_POLL } from '../../config/constants';
-import { HttpError, paperService } from '../../services';
+import { HttpError, paperService } from '../../services/index';
 import { paperStore } from '../../stores/paper';
 import { confirm, toast } from '../../utils/toast';
 import { sleep } from '../../utils/time';

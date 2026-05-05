@@ -12,8 +12,7 @@
 
 import { createStoreBindings } from 'mobx-miniprogram-bindings';
 
-import { mistakeService } from '../../services';
-import { HttpError } from '../../services';
+import { mistakeService, HttpError } from '../../services/index';
 import { mistakeStore } from '../../stores/mistake';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';
 import { track } from '../../utils/tracker';

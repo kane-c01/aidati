@@ -4,8 +4,7 @@
  * 03-API §3.4
  */
 
-import { userService } from '../../services';
-import { HttpError } from '../../services';
+import { userService, HttpError } from '../../services/index';
 import { hideLoading, showLoading, toast } from '../../utils/toast';
 import { track } from '../../utils/tracker';
 

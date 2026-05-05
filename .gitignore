@@ -35,6 +35,9 @@ admin-web/vite.config.js
 # unplugin-auto-import / unplugin-vue-components 自动生成的 d.ts
 admin-web/src/auto-imports.d.ts
 admin-web/src/components.d.ts
+
+# HBuilderX 误生成的 uni-app 工程目录, 不属于本仓库
+miniprogram/ai智能出题/
 out/
 miniprogram/miniprogram_npm/
 

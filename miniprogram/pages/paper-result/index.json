@@ -1,6 +1,5 @@
 {
   "navigationBarTitleText": "答题报告",
-  "enableShareAppMessage": true,
   "usingComponents": {
     "score-display": "/components/score-display/index",
     "ai-disclaimer": "/components/ai-disclaimer/index",

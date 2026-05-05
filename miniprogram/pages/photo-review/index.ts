@@ -12,7 +12,7 @@
  */
 
 import { OCR_POLL } from '../../config/constants';
-import { HttpError, photoService } from '../../services';
+import { HttpError, photoService } from '../../services/index';
 import { paperStore } from '../../stores/paper';
 import { photoStore } from '../../stores/photo';
 import { hideLoading, showLoading, toast } from '../../utils/toast';

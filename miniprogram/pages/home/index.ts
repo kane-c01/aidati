@@ -13,8 +13,7 @@
 
 import { createStoreBindings } from 'mobx-miniprogram-bindings';
 
-import { bookService } from '../../services';
-import { HttpError } from '../../services';
+import { bookService, HttpError } from '../../services/index';
 import { toast } from '../../utils/toast';
 import { track } from '../../utils/tracker';
 import { userStore } from '../../stores/user';

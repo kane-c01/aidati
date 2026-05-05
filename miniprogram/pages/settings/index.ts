@@ -7,8 +7,7 @@
 
 import { createStoreBindings } from 'mobx-miniprogram-bindings';
 
-import { authService, userService } from '../../services';
-import { HttpError } from '../../services';
+import { authService, userService, HttpError } from '../../services/index';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';
 import { env } from '../../config/env';
 import { userStore } from '../../stores/user';

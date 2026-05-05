@@ -20,7 +20,7 @@ import {
   QUESTION_TYPES,
   QUESTION_TYPE_LABEL,
 } from '../../config/constants';
-import { ContentBlockedError, HttpError, paperService, QuotaExceededError } from '../../services';
+import { ContentBlockedError, HttpError, paperService, QuotaExceededError } from '../../services/index';
 import { paperStore } from '../../stores/paper';
 import { userStore } from '../../stores/user';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';

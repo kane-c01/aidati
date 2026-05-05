@@ -8,8 +8,7 @@
  * 默认展开错题, 折叠正确题
  */
 
-import { paperService } from '../../services';
-import { HttpError } from '../../services';
+import { paperService, HttpError } from '../../services/index';
 import { paperStore } from '../../stores/paper';
 import { sleep, formatDuration } from '../../utils/time';
 import { track } from '../../utils/tracker';

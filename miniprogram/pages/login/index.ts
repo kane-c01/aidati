@@ -7,7 +7,7 @@
  * - 登录成功:首次登录 → onboarding;否则 → home
  */
 
-import { ContentBlockedError, HttpError } from '../../services';
+import { ContentBlockedError, HttpError } from '../../services/index';
 import { ERROR_CODES, STORAGE_KEYS } from '../../config/constants';
 import { ENV_VERSION_LABEL, env } from '../../config/env';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';

@@ -7,7 +7,7 @@
 import { observable, runInAction } from 'mobx-miniprogram';
 
 import { STORAGE_KEYS, ANSWER_DRAFT_TTL_MS } from '../config/constants';
-import { paperService } from '../services';
+import { paperService } from '../services/index';
 import { getStorage, removeStorage, setStorage } from '../utils/storage';
 import type {
   AnswerItem,

@@ -4,7 +4,7 @@
 
 import { observable, runInAction } from 'mobx-miniprogram';
 
-import { mistakeService } from '../services';
+import { mistakeService } from '../services/index';
 import type { MistakeListQuery } from '../types/api';
 import type { MistakeItem, MistakeStatus, MistakeSummary } from '../types/domain';
 

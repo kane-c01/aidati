@@ -10,8 +10,7 @@
  *  - 返回拦截: 弹 Modal「暂存退出后, 7 天内可继续」
  */
 
-import { paperService } from '../../services';
-import { HttpError } from '../../services';
+import { paperService, HttpError } from '../../services/index';
 import { paperStore } from '../../stores/paper';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';
 import { formatDuration } from '../../utils/time';
