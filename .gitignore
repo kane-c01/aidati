@@ -28,6 +28,13 @@ dist/
 build/
 *.tsbuildinfo
 .next/
+
+# vue-tsc -b 在 vite.config.ts 旁边生成的 .d.ts/.js(每次 build 都会出, 没必要进 git)
+admin-web/vite.config.d.ts
+admin-web/vite.config.js
+# unplugin-auto-import / unplugin-vue-components 自动生成的 d.ts
+admin-web/src/auto-imports.d.ts
+admin-web/src/components.d.ts
 out/
 miniprogram/miniprogram_npm/
 
