@@ -5,6 +5,8 @@ import { ParseBigIntPipe } from '../../common/pipes/parse-bigint.pipe';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { JwtPayload } from '../../common/types/auth.types';
 
+import { SetAdminCredentialDto } from '../auth/dto/admin-login.dto';
+
 import { BanUserDto, ListAdminUsersQuery } from './dto/admin-user.dto';
 import { AdminUserService } from './services/admin-user.service';
 
@@ -57,5 +59,17 @@ export class AdminUserController {
   @HttpCode(HttpStatus.OK)
   async demote(@CurrentUser() user: JwtPayload, @Param('id', ParseBigIntPipe) id: bigint) {
     return this.service.demoteToUser(BigInt(user.sub), id);
+  }
+
+  /** 超管给某个 admin/super_admin 设置后台账号密码 */
+  @Post(':id/credential')
+  @Roles('super_admin')
+  @HttpCode(HttpStatus.OK)
+  async setCredential(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() dto: SetAdminCredentialDto,
+  ) {
+    return this.service.setCredential(BigInt(user.sub), id, dto);
   }
 }

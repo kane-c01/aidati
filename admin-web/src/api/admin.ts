@@ -26,6 +26,10 @@ export const authApi = {
   wechatLogin: (payload: LoginPayload): Promise<LoginResult> =>
     api.post('/auth/wechat-login', payload),
 
+  /** 后台账号密码登录 */
+  adminLogin: (username: string, password: string): Promise<LoginResult> =>
+    api.post('/auth/admin-login', { username, password }),
+
   refresh: (refresh_token: string): Promise<{ access_token: string; refresh_token: string; expires_in: number }> =>
     api.post('/auth/refresh', { refresh_token }),
 
@@ -92,6 +96,8 @@ export const userApi = {
   unban: (id: string): Promise<AdminUserView> => api.post(`/admin/users/${id}/unban`),
   promote: (id: string): Promise<AdminUserView> => api.post(`/admin/users/${id}/promote`),
   demote: (id: string): Promise<AdminUserView> => api.post(`/admin/users/${id}/demote`),
+  setCredential: (id: string, username: string, password: string): Promise<AdminUserView> =>
+    api.post(`/admin/users/${id}/credential`, { username, password }),
 };
 
 // ===== 系统配置 (super_admin) =====

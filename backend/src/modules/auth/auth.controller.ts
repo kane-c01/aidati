@@ -5,6 +5,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import type { JwtPayload } from '../../common/types/auth.types';
 
 import { AuthService, type LoginResult } from './auth.service';
+import { AdminLoginDto } from './dto/admin-login.dto';
 import { CancelAccountDto } from './dto/cancel-account.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { WechatLoginDto } from './dto/wechat-login.dto';
@@ -22,6 +23,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async wechatLogin(@Body() dto: WechatLoginDto): Promise<LoginResult> {
     return this.authService.wechatLogin(dto);
+  }
+
+  /** 后台账号密码登录 — 限 admin / super_admin */
+  @Public()
+  @Post('admin-login')
+  @HttpCode(HttpStatus.OK)
+  async adminLogin(@Body() dto: AdminLoginDto): Promise<LoginResult> {
+    return this.authService.adminLogin(dto);
   }
 
   @Public()

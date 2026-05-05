@@ -44,6 +44,17 @@ export const useAuthStore = defineStore('auth', {
 
     async login(payload: LoginPayload): Promise<UserBrief> {
       const res = await authApi.wechatLogin(payload);
+      return this.absorbLoginResult(res);
+    },
+
+    /** 后台账号密码登录(主流程) */
+    async adminLogin(username: string, password: string): Promise<UserBrief> {
+      const res = await authApi.adminLogin(username, password);
+      return this.absorbLoginResult(res);
+    },
+
+    /** 把登录响应写入 token / user store, 校验角色 */
+    absorbLoginResult(res: { access_token: string; refresh_token: string; user: UserBrief }): UserBrief {
       tokenStore.setTokens(res.access_token, res.refresh_token);
       const user: UserBrief = {
         id: res.user.id,
@@ -54,7 +65,6 @@ export const useAuthStore = defineStore('auth', {
         minor_mode_enabled: res.user.minor_mode_enabled,
       };
       if (user.role !== 'admin' && user.role !== 'super_admin') {
-        // 非管理员不允许进后台,清掉 token
         tokenStore.clear();
         throw new Error('当前账号没有管理员权限');
       }

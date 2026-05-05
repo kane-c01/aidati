@@ -7,8 +7,10 @@ import {
 } from '../../../common/exceptions/business.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes';
 import { maskOpenid } from '../../../common/utils/mask';
+import { hashPassword } from '../../../common/utils/password';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 
+import type { SetAdminCredentialDto } from '../../auth/dto/admin-login.dto';
 import type { BanUserDto, ListAdminUsersQuery } from '../dto/admin-user.dto';
 
 import { AdminLogService } from './admin-log.service';
@@ -172,6 +174,61 @@ export class AdminUserService {
       targetType: 'user',
       targetId: userId,
     });
+    return this.toView(updated);
+  }
+
+  /**
+   * super_admin 给某个 admin / super_admin 账号设置(或重置)用户名密码
+   * - 仅能给 admin / super_admin 设;普通用户不能开后台账号
+   * - 目标账号必须存在且 status=1
+   * - username 唯一
+   */
+  async setCredential(
+    operatorId: bigint,
+    userId: bigint,
+    dto: SetAdminCredentialDto,
+  ): Promise<AdminUserView> {
+    const target = await this.findOrThrow(userId);
+    if (target.role !== UserRole.admin && target.role !== UserRole.super_admin) {
+      throw new BusinessException(
+        ERROR_CODES.PARAM_INVALID,
+        '只能给 admin / super_admin 设置后台账号密码;请先 promote',
+      );
+    }
+    if (target.status !== 1) {
+      throw new BusinessException(ERROR_CODES.USER_BANNED, '该账号当前不可用');
+    }
+
+    const username = dto.username.trim();
+    if (!/^[A-Za-z0-9_-]{2,64}$/.test(username)) {
+      throw new BusinessException(
+        ERROR_CODES.PARAM_INVALID,
+        '账号仅支持字母 / 数字 / _ / -, 长度 2~64',
+      );
+    }
+
+    // 同名占位检查
+    const dup = await this.prisma.user.findUnique({ where: { username } });
+    if (dup && dup.id !== target.id) {
+      throw new BusinessException(ERROR_CODES.PARAM_INVALID, `账号 ${username} 已被占用`);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: target.id },
+      data: {
+        username,
+        passwordHash: hashPassword(dto.password),
+      },
+    });
+
+    await this.adminLog.record({
+      adminId: operatorId,
+      action: 'user.set_credential',
+      targetType: 'user',
+      targetId: userId,
+      meta: { username },
+    });
+
     return this.toView(updated);
   }
 

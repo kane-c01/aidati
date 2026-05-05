@@ -112,8 +112,13 @@ enum ModerationResult {
 /// 文档:02-数据库设计文档.md §3.1
 model User {
   id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  openid            String    @unique(map: "uk_user_openid") @db.VarChar(64)
+  /// 微信 openid;account-only 管理员可为 null
+  openid            String?   @unique(map: "uk_user_openid") @db.VarChar(64)
   unionid           String?   @db.VarChar(64)
+  /// 后台账号(用户名), 仅 admin/super_admin 使用;微信用户为 null
+  username          String?   @unique(map: "uk_user_username") @db.VarChar(64)
+  /// 密码哈希(scrypt$salt$hash), 仅账号密码登录使用
+  passwordHash      String?   @map("password_hash") @db.VarChar(255)
   nickname          String?   @db.VarChar(64)
   avatarUrl         String?   @map("avatar_url") @db.VarChar(512)
   role              UserRole  @default(user)

@@ -7,8 +7,10 @@ import {
 } from '../../common/exceptions/business.exception';
 import { ERROR_CODES } from '../../common/constants/error-codes';
 import { maskOpenid } from '../../common/utils/mask';
+import { verifyPassword } from '../../common/utils/password';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 
+import type { AdminLoginDto } from './dto/admin-login.dto';
 import type { WechatLoginDto } from './dto/wechat-login.dto';
 import type { CancelAccountDto } from './dto/cancel-account.dto';
 import { TokenService, type TokenPair } from './services/token.service';
@@ -107,7 +109,7 @@ export class AuthService {
 
     const tokens = await this.tokenService.sign({
       userId: user.id,
-      openid: user.openid,
+      openid: user.openid ?? '',
       role: user.role,
     });
 
@@ -121,6 +123,64 @@ export class AuthService {
         is_minor: user.isMinor,
         minor_mode_enabled: user.minorModeEnabled,
         is_first_login: isFirstLogin,
+      },
+    };
+  }
+
+  /**
+   * 后台账号密码登录
+   * 文档:03-API §二(扩展)
+   *
+   * 仅 admin / super_admin 可用;普通 user 强制走微信登录
+   * - 账号 / 密码任一不匹配统一 401(防爆破探测)
+   * - 同样要走 status / deletedAt 检查
+   */
+  async adminLogin(dto: AdminLoginDto): Promise<LoginResult> {
+    const username = dto.username.trim();
+    const user = await this.prisma.user.findUnique({ where: { username } });
+
+    if (!user || !user.passwordHash) {
+      this.logger.warn(`adminLogin 失败:账号不存在 username=${username}`);
+      throw new UnauthorizedBusinessException('账号或密码错误');
+    }
+
+    const ok = verifyPassword(dto.password, user.passwordHash);
+    if (!ok) {
+      this.logger.warn(`adminLogin 失败:密码错误 user_id=${user.id}`);
+      throw new UnauthorizedBusinessException('账号或密码错误');
+    }
+
+    if (user.role !== UserRole.admin && user.role !== UserRole.super_admin) {
+      throw new UnauthorizedBusinessException('该账号没有管理员权限');
+    }
+
+    this.checkUserStatus(user);
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    const tokens = await this.tokenService.sign({
+      userId: updated.id,
+      openid: updated.openid ?? `admin-${updated.username}`,
+      role: updated.role,
+    });
+
+    this.logger.log(
+      `adminLogin user_id=${updated.id} username=${updated.username} role=${updated.role}`,
+    );
+
+    return {
+      ...tokens,
+      user: {
+        id: updated.id.toString(),
+        nickname: updated.nickname,
+        avatar_url: updated.avatarUrl,
+        role: updated.role,
+        is_minor: updated.isMinor,
+        minor_mode_enabled: updated.minorModeEnabled,
+        is_first_login: false,
       },
     };
   }

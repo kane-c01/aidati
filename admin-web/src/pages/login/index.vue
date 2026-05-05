@@ -9,7 +9,7 @@
           AI 出题学习 · 管理后台
         </h1>
         <p class="brand-subtitle">
-          仅供 admin / super_admin 使用
+          仅供管理员使用
         </p>
       </div>
 
@@ -21,24 +21,29 @@
         @keyup.enter="onSubmit"
       >
         <el-form-item
-          label="登录 Code"
-          prop="code"
+          label="账号"
+          prop="username"
         >
           <el-input
-            v-model="form.code"
-            placeholder="生产请扫码;dev 模式直接填 mock-xxx"
+            v-model="form.username"
+            placeholder="请输入管理员账号"
             size="large"
-            :prefix-icon="Lock"
+            :prefix-icon="User"
+            autocomplete="username"
           />
         </el-form-item>
         <el-form-item
-          label="昵称(可选)"
-          prop="nickname"
+          label="密码"
+          prop="password"
         >
           <el-input
-            v-model="form.nickname"
-            placeholder="第一次登录时建议填"
+            v-model="form.password"
+            type="password"
+            placeholder="请输入密码"
             size="large"
+            :prefix-icon="Lock"
+            show-password
+            autocomplete="current-password"
           />
         </el-form-item>
 
@@ -54,15 +59,14 @@
       </el-form>
 
       <p class="hint">
-        本地 dev:<code>mock-super-*</code> 直登超管,<code>mock-admin-*</code> 直登管理员;<br />
-        真实环境需要扫描微信工作号 + 服务端校验。
+        默认超管:<code>admin</code> / <code>admin123</code> — 首次登录后请到「用户管理」改密码
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Lock } from '@element-plus/icons-vue';
+import { Lock, User } from '@element-plus/icons-vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -76,15 +80,18 @@ const router = useRouter();
 const formRef = ref<FormInstance>();
 const submitting = ref(false);
 const form = reactive({
-  // dev 默认填超管 code, 后端识别 mock-super-* 前缀自动给 super_admin 角色
-  code: 'mock-super-001',
-  nickname: '',
+  username: 'admin',
+  password: 'admin123',
 });
 
 const rules: FormRules = {
-  code: [
-    { required: true, message: '请输入登录 Code', trigger: 'blur' },
-    { min: 4, max: 128, message: 'Code 长度 4~128', trigger: 'blur' },
+  username: [
+    { required: true, message: '请输入账号', trigger: 'blur' },
+    { min: 2, max: 64, message: '账号长度 2~64', trigger: 'blur' },
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 128, message: '密码长度 6~128', trigger: 'blur' },
   ],
 };
 
@@ -94,17 +101,12 @@ async function onSubmit(): Promise<void> {
   if (!ok) return;
   submitting.value = true;
   try {
-    await auth.login({
-      code: form.code.trim(),
-      user_info: form.nickname.trim() ? { nickname: form.nickname.trim() } : undefined,
-      privacy_version: 'v1.0',
-      agreed_at: new Date().toISOString(),
-    });
+    await auth.adminLogin(form.username.trim(), form.password);
     ElMessage.success(`欢迎,${auth.displayName}`);
     void router.replace('/dashboard');
   } catch (err) {
     if (err instanceof ApiError) {
-      // ApiError 已经被 http 层统一弹过了, 这里不重复
+      // ApiError 已经被 http 层 ElMessage 弹过了
     } else if (err instanceof Error) {
       ElMessage.error(err.message);
     }

@@ -6,8 +6,14 @@
  *   pnpm db:seed
  *
  * 也可在 prisma migrate reset 时自动跑(由 package.json prisma.seed 配置)
+ *
+ * Seed 内容:
+ * 1. system_config 13 项默认配置
+ * 2. 默认超级管理员 admin / admin123(!首次部署后必须改密码!)
  */
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
+
+import { hashPassword } from '../src/common/utils/password';
 
 const prisma = new PrismaClient();
 
@@ -103,9 +109,39 @@ async function upsertSystemConfig(): Promise<void> {
   console.log(`✅ system_config: 已初始化 ${SYSTEM_CONFIGS.length} 项配置`);
 }
 
+/**
+ * 默认超级管理员账号
+ * - 仅在「该 username 还不存在」时插入(已存在不会覆盖密码,避免误踩)
+ * - 默认密码 admin123, 首次登录后请马上改
+ */
+async function ensureDefaultSuperAdmin(): Promise<void> {
+  const username = 'admin';
+  const defaultPassword = 'admin123';
+  const existing = await prisma.user.findUnique({ where: { username } });
+  if (existing) {
+    console.log(`✅ 默认超管已存在 user_id=${existing.id} username=${username},不重置密码`);
+    return;
+  }
+  const created = await prisma.user.create({
+    data: {
+      username,
+      passwordHash: hashPassword(defaultPassword),
+      nickname: '超级管理员',
+      role: UserRole.super_admin,
+      status: 1,
+      // 后台账号无 openid
+      openid: null,
+    },
+  });
+  console.log(
+    `🔑 已创建默认超管 user_id=${created.id} username=${username} 密码=${defaultPassword}(请尽快改密码!)`,
+  );
+}
+
 async function main(): Promise<void> {
   console.log('🌱 开始执行 seed...');
   await upsertSystemConfig();
+  await ensureDefaultSuperAdmin();
   console.log('🎉 seed 完成');
 }
 

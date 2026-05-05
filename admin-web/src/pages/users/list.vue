@@ -246,10 +246,75 @@
             >
               免职
             </el-button>
+            <el-button
+              v-if="row.role === 'admin' || row.role === 'super_admin'"
+              text
+              type="primary"
+              size="small"
+              @click="openCredentialDialog(row)"
+            >
+              设密码
+            </el-button>
           </template>
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 设/重置后台账号密码弹框(super_admin) -->
+    <el-dialog
+      v-model="credentialVisible"
+      :title="`设置后台账号密码 - ${credentialTarget?.nickname ?? credentialTarget?.id ?? ''}`"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <el-alert
+        v-if="credentialTarget?.role !== 'super_admin' && credentialTarget?.role !== 'admin'"
+        type="warning"
+        show-icon
+        :closable="false"
+        title="只能给 admin / super_admin 设密码,先「任命 admin」再来"
+        style="margin-bottom: 12px"
+      />
+      <el-form
+        ref="credFormRef"
+        :model="credForm"
+        :rules="credRules"
+        label-position="top"
+      >
+        <el-form-item
+          label="账号(英数下划线连字符,2~64)"
+          prop="username"
+        >
+          <el-input
+            v-model="credForm.username"
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item
+          label="密码(≥ 6 位)"
+          prop="password"
+        >
+          <el-input
+            v-model="credForm.password"
+            type="password"
+            show-password
+            autocomplete="new-password"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="credentialVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="credSubmitting"
+          @click="onCredentialSubmit"
+        >
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
 
     <el-pagination
       class="pagination"
@@ -271,7 +336,7 @@
 <script setup lang="ts">
 import { Refresh, Search } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
 import { userApi } from '@/api/admin';
@@ -378,6 +443,53 @@ async function onDemote(row: AdminUserView): Promise<void> {
   await userApi.demote(row.id);
   ElMessage.success('已免职');
   void loadList();
+}
+
+// ===== 后台账号密码 =====
+const credentialVisible = ref(false);
+const credentialTarget = ref<AdminUserView | null>(null);
+const credSubmitting = ref(false);
+const credFormRef = ref<FormInstance>();
+const credForm = reactive({ username: '', password: '' });
+const credRules = {
+  username: [
+    { required: true, message: '请输入账号', trigger: 'blur' },
+    {
+      pattern: /^[A-Za-z0-9_-]{2,64}$/,
+      message: '仅支持字母 / 数字 / _ / -, 长度 2~64',
+      trigger: 'blur',
+    },
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 128, message: '密码 6~128 位', trigger: 'blur' },
+  ],
+};
+
+function openCredentialDialog(row: AdminUserView): void {
+  credentialTarget.value = row;
+  credForm.username = '';
+  credForm.password = '';
+  credentialVisible.value = true;
+}
+
+async function onCredentialSubmit(): Promise<void> {
+  if (!credentialTarget.value || !credFormRef.value) return;
+  const ok = await credFormRef.value.validate().catch(() => false);
+  if (!ok) return;
+  credSubmitting.value = true;
+  try {
+    await userApi.setCredential(
+      credentialTarget.value.id,
+      credForm.username.trim(),
+      credForm.password,
+    );
+    ElMessage.success('已保存,该账号现在可以用账号密码登录');
+    credentialVisible.value = false;
+    void loadList();
+  } finally {
+    credSubmitting.value = false;
+  }
 }
 
 function format(ts: string): string {
