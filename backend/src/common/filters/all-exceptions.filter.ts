@@ -46,11 +46,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
       httpStatus = exception.getStatus();
       bizCode = this.mapHttpStatusToBizCode(httpStatus);
       const res = exception.getResponse();
-      message = this.extractMessage(res);
+      // 4xx 类异常透传 framework 文案;5xx 类隐藏内部细节
+      if (httpStatus < 500) {
+        message = this.extractMessage(res);
+      } else {
+        const fallback = ERROR_MESSAGES[bizCode] ?? ERROR_MESSAGES[ERROR_CODES.DB_ERROR];
+        message = fallback;
+        this.logger.error(
+          `${request.method} ${request.url} → ${httpStatus} ` +
+            `internal=${this.extractMessage(res)}`,
+          exception.stack,
+        );
+      }
     } else if (exception instanceof Error) {
-      message = exception.message;
-      // 仅未知错误打 error 日志(业务异常已被预期, 打 warn 即可)
-      this.logger.error(`${request.method} ${request.url} - ${exception.message}`, exception.stack);
+      // 5xx 未知异常: 给前端泛化文案, 详细错误仅入日志, 防止 SQL/表名/堆栈泄露
+      message = ERROR_MESSAGES[ERROR_CODES.DB_ERROR];
+      this.logger.error(
+        `${request.method} ${request.url} - ${exception.message}`,
+        exception.stack,
+      );
     }
 
     if (httpStatus >= 400 && httpStatus < 500 && exception instanceof BusinessException) {

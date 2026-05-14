@@ -60,7 +60,6 @@
 | 20001 | token 无效或过期 |
 | 20002 | 账号已被封禁 |
 | 20003 | 账号已注销 |
-| 20004 | 未成年人模式时段限制 |
 | 30001 | 出题额度已用尽 |
 | 30002 | LLM 服务不可用 |
 | 30003 | LLM 输出格式错误 |
@@ -131,8 +130,6 @@ GET /xxx?page=1&page_size=20&sort=created_at:desc
       "nickname": "Karl",
       "avatar_url": "https://...",
       "role": "user",
-      "is_minor": 0,
-      "minor_mode_enabled": 0,
       "is_first_login": true       // 首次登录,客户端需展示引导
     }
   }
@@ -211,10 +208,8 @@ GET /xxx?page=1&page_size=20&sort=created_at:desc
 
 **`PATCH /user/me`**
 ```jsonc
-{ "nickname": "...", "avatar_url": "...", "is_minor": 0, "minor_mode_enabled": 0 }
+{ "nickname": "...", "avatar_url": "..." }
 ```
-
-> 切换未成年模式不需要二次确认;但 `is_minor=1` 一旦设置不可改回(除非客服通道)。
 
 ### 3.3 查看协议状态
 
@@ -233,11 +228,10 @@ GET /xxx?page=1&page_size=20&sort=created_at:desc
 
 ### 4.1 书库列表
 
-**`GET /books?keyword=&category=&page=1&page_size=20&sort=recommended`**
+**`GET /books?keyword=&page=1&page_size=20&sort=recommended`**
 
 参数:
-- `keyword` 模糊匹配 title/author
-- `category` 分类筛选
+- `keyword` 模糊匹配 title/author/isbn
 - `sort` `recommended | latest | hot`
 
 响应 list item:
@@ -248,12 +242,14 @@ GET /xxx?page=1&page_size=20&sort=created_at:desc
   "author": "...",
   "cover_url": "...",
   "description": "...",
-  "category": "小说",
-  "tags": ["..."],
+  "tags": ["公考","行测"],
   "is_recommended": true,
   "is_favorited": false        // V2,登录用户才有意义
 }
 ```
+
+> 2026-05-07 起 `category` 字段已下线(分类管理废弃,详见 02-数据库设计文档迁移记录),
+> 老客户端如继续传 `?category=xxx` 后端会忽略不报错。
 
 ### 4.2 书籍详情
 
@@ -281,25 +277,63 @@ GET /xxx?page=1&page_size=20&sort=created_at:desc
 - **`DELETE /books/{id}/favorite`**
 - **`GET /user/me/favorites?page=&page_size=`**
 
-### 4.5 用户上传书籍(V2)
+### 4.5 我的书库(M8 自建书)
 
-**`POST /book-uploads`**
+**`GET /books/mine?page=1&page_size=20`** 列出当前用户上传的 PDF 自建书。
+
+每个 list item:
+```jsonc
+{
+  "id": "1024",
+  "title": "...",
+  "cover_url": "...",
+  "tags": [],
+  "is_recommended": false,
+  "is_favorited": false,
+  "import_status": "ready",         // preparing/extracting/splitting/ready/failed
+  "import_progress": 100,
+  "import_error": null,
+  "linked_photo_set_id": "777",     // M8 PR2.6 双写, null 表示尚未生成 / 已被回收
+  "chapters_count": 12,
+  "pdf_url": "...",
+  "created_at": "2026-05-07T..."
+}
+```
+
+**`POST /books/upload`** 上传新书(异步双写)。
+
 ```jsonc
 {
   "title": "...",
   "author": "...",
   "description": "...",
-  "category": "...",
   "cover_url": "<oss_url>",
   "pdf_url": "<oss_url>",
-  "pdf_pages": 230,
-  "copyright_claim": true
+  "max_chapters": 50               // 可选, 默认让 LLM 自决
 }
 ```
 
-返回 201,`{ "id": "...", "status": "pending" }`
+返回 201:整本书的 `BookDetailView`,`import_status="preparing"`。
+后台同时跑两条独立链路:
+- **A 章节抽取**(原有):pdfplumber/VL → markdown → LLM 切章 → `import_status=ready` + chapters[]
+- **B 拍照集双写**(M8 PR2.6 新增):ai-service 拆图 → 上传 OSS → 创建 photo_set + photos → 写入 `book.linked_photo_set_id`
 
-**`GET /user/me/book-uploads?status=`** 查看自己的上传记录
+任一失败仅影响那一路;前端轮询 `GET /books/mine` 查 `import_status` + `linked_photo_set_id` 即可。
+
+**`POST /books/from-photo-set`** 由拍照集反向建书。
+
+```jsonc
+{
+  "photo_set_id": "...",
+  "title": "...",
+  "author": "...",
+  "description": "..."
+}
+```
+
+**`PATCH /books/{id}`** 改名 / 换封面 / 改简介(只允许 owner)。
+
+**`DELETE /books/{id}`** 软删自己的书;若有 `linked_photo_set_id` 同步把那个 photo_set 的 `expires_at` 推到 +7 天等定时清理。
 
 ---
 
@@ -358,6 +392,56 @@ GET /xxx?page=1&page_size=20&sort=created_at:desc
   ```jsonc
   { "items": [{"id":"1","order_no":1},{"id":"2","order_no":2}] }
   ```
+
+### 5.5 拍照集 meta(M8 PR2.6)
+
+**`GET /photo-sets/{id}`** 返回拍照集元信息(不含 photos),用于反查源书。
+
+```jsonc
+{
+  "data": {
+    "id": "1024",
+    "name": "高一物理 第三章 · 原始页面",
+    "total_pages": 18,
+    "ocr_status": "done",
+    "source_kind": "book",     // capture / pdf / book
+    "source_book_id": "201",   // 当 source_kind=book 时反查源书
+    "expires_at": "2076-05-07T00:00:00Z",
+    "created_at": "2026-05-07T19:00:00Z"
+  }
+}
+```
+
+### 5.6 PDF → 拍照集(M8 PR2.6)
+
+**`POST /photo-sets/from-pdf`** 把已上传到 OSS 的 PDF 拆图建拍照集,实现「拍照统一入口」(微信聊天文件 / 本地 PDF 都走这条路径)。
+
+```jsonc
+{
+  "pdf_url": "<oss_url>",        // 必须先经 /upload/policy?scene=pdf 上传
+  "name": "数学第三章",          // 可选, 默认 "PDF 导入 · N 页"
+  "max_pages": 50                // 可选, 默认 50, 上限 50; 超过则截断
+}
+```
+
+返回 201:
+```jsonc
+{
+  "data": {
+    "photo_set_id": "1024",
+    "total_pages": 78,            // PDF 实际总页数
+    "truncated": true,            // 是否因 max_pages 截断
+    "photos": [
+      { "id":"1", "order_no":1, "image_url":"...", "ocr_text":null, "regions":[] },
+      ...
+    ]
+  }
+}
+```
+
+> 同步处理(50 页约 30s);失败抛 `30002 LLM_UNAVAILABLE`。
+> 后端流程:校验 pdf_url 属本系统 OSS → ai-service 拆图 → 逐页上传 OSS → 创建 photo_set + photos → 异步触发内容审核。
+> 自带 `source_kind='pdf'`,与拍照流程的 `source_kind='capture'` 区分;若由 `POST /books/upload` 双写而来则 `source_kind='book'`。
 
 ---
 
@@ -691,7 +775,7 @@ Header:`Idempotency-Key: paper-{id}-submit`
 - **`GET /admin/book-uploads/{id}`** → 详情
 - **`POST /admin/book-uploads/{id}/approve`**
   ```jsonc
-  { "edited": { "title":"...", "author":"...","category":"..." } }   // 编辑后通过
+  { "edited": { "title":"...", "author":"...","tags":["公考","行测"] } }   // 编辑后通过
   ```
 - **`POST /admin/book-uploads/{id}/reject`**
   ```jsonc

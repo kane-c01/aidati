@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "上传新书",
+  "usingComponents": {
+    "ai-disclaimer": "/components/ai-disclaimer/index"
+  }
+}

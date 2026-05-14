@@ -6,7 +6,7 @@
           AI
         </div>
         <h1 class="brand-title">
-          AI 出题学习 · 管理后台
+          考题魔盒 · 管理后台
         </h1>
         <p class="brand-subtitle">
           仅供管理员使用
@@ -69,13 +69,14 @@
 import { Lock, User } from '@element-plus/icons-vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { ApiError } from '@/api/http';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const formRef = ref<FormInstance>();
 const submitting = ref(false);
@@ -103,7 +104,8 @@ async function onSubmit(): Promise<void> {
   try {
     await auth.adminLogin(form.username.trim(), form.password);
     ElMessage.success(`欢迎,${auth.displayName}`);
-    void router.replace('/dashboard');
+    const target = (route.query.redirect as string | undefined) || '/dashboard';
+    void router.replace(target);
   } catch (err) {
     if (err instanceof ApiError) {
       // ApiError 已经被 http 层 ElMessage 弹过了

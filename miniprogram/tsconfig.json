@@ -26,5 +26,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.d.ts"],
-  "exclude": ["node_modules", "miniprogram_npm", "dist", "ai智能出题"]
+  "exclude": ["node_modules", "miniprogram_npm", "dist"]
 }

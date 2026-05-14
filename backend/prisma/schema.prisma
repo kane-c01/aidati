@@ -49,6 +49,20 @@ enum OcrStatus {
   failed
 }
 
+/// 用户上传 / 后台导入 PDF 的处理进度
+/// preparing  → 已落库, 还没开始抽
+/// extracting → pdfplumber / VL 抽文字中
+/// splitting  → LLM 切章节中
+/// ready      → 已完成可用
+/// failed     → 失败(看 importError)
+enum BookImportStatus {
+  preparing
+  extracting
+  splitting
+  ready
+  failed
+}
+
 enum PaperSourceType {
   book
   chapter
@@ -124,8 +138,6 @@ model User {
   role              UserRole  @default(user)
   /// 1 正常 / 0 封禁 / -1 已注销
   status            Int       @default(1) @db.TinyInt
-  isMinor           Int       @default(0) @map("is_minor") @db.TinyInt
-  minorModeEnabled  Int       @default(0) @map("minor_mode_enabled") @db.TinyInt
   privacyVersion    String?   @map("privacy_version") @db.VarChar(16)
   privacyAgreedAt   DateTime? @map("privacy_agreed_at") @db.Timestamp(0)
   lastLoginAt       DateTime? @map("last_login_at") @db.Timestamp(0)
@@ -142,6 +154,7 @@ model User {
   moderationLogs    ModerationLog[]
   adminLogs         AdminLog[]    @relation("AdminLogAdmin")
   booksCreated      Book[]        @relation("BookCreator")
+  favorites         Favorite[]
 
   @@index([unionid], map: "idx_user_unionid")
   @@index([status], map: "idx_user_status")
@@ -160,8 +173,7 @@ model Book {
   coverUrl          String?             @map("cover_url") @db.VarChar(512)
   pdfUrl            String?             @map("pdf_url") @db.VarChar(512)
   pdfPages          Int?                @map("pdf_pages")
-  category          String?             @db.VarChar(64)
-  /// 标签 ["小说","历史"]
+  /// 标签 ["公考","行测","公版"], 用于检索 / 同质题去重
   tags              Json?
   source            BookSource          @default(admin)
   copyrightStatus   BookCopyrightStatus? @map("copyright_status")
@@ -169,6 +181,18 @@ model Book {
   status            Int                 @default(1) @db.TinyInt
   isRecommended     Int                 @default(0) @map("is_recommended") @db.TinyInt
   sortWeight        Int                 @default(0) @map("sort_weight")
+  /// M8 异步抽章状态(管理员录入的 ready;用户上传 / from-photo-set 创建时为 preparing → extracting → splitting → ready)
+  importStatus      BookImportStatus    @default(ready) @map("import_status")
+  /// 0-100, 仅在 extracting / splitting 阶段有意义
+  importProgress    Int                 @default(0) @map("import_progress")
+  /// 失败原因(仅 importStatus=failed 时有值)
+  importError       String?             @map("import_error") @db.Text
+  /// 异步任务最近一次活动时间(用于超时检测)
+  importUpdatedAt   DateTime?           @map("import_updated_at") @db.Timestamp(0)
+  /// M8 PR2.6: 上传 PDF 自建书时双写生成的"可校对拍照集" id
+  /// - 用户在书详情/拍照页可双向切换;photo_set 不会因 7 天 TTL 被清(expiresAt 设为远期)
+  /// - 仅 source=user_upload 且有 pdfUrl 时才会有值
+  linkedPhotoSetId  BigInt?             @map("linked_photo_set_id") @db.UnsignedBigInt
   createdBy         BigInt              @map("created_by") @db.UnsignedBigInt
   createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamp(0)
@@ -178,10 +202,11 @@ model Book {
   chapters          Chapter[]
   papers            Paper[]
   mistakes          Mistake[]
+  favorites         Favorite[]
 
   @@index([status, isRecommended, sortWeight], map: "idx_book_status_recommend")
-  @@index([category], map: "idx_book_category")
   @@index([isbn], map: "idx_book_isbn")
+  @@index([linkedPhotoSetId], map: "idx_book_linked_photo_set")
   @@map("book")
 }
 
@@ -215,8 +240,12 @@ model PhotoSet {
   ocrText     String?   @map("ocr_text") @db.LongText
   ocrStatus   OcrStatus @default(pending) @map("ocr_status")
   totalPages  Int       @default(0) @map("total_pages")
+  /// 来源种类:'capture'(默认拍照)、'pdf'(用户拍照入口导入 PDF)、'book'(从自建书 PDF 双写)
+  sourceKind  String    @default("capture") @map("source_kind") @db.VarChar(16)
+  /// 反向关联:当 sourceKind='book' 时记录关联的 Book.id, 便于拍照页跳书阅读
+  sourceBookId BigInt?  @map("source_book_id") @db.UnsignedBigInt
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  /// 7 天后到期清理
+  /// 7 天后到期清理(绑定到 Book 时自动延长到 +50 年, 避免误清)
   expiresAt   DateTime  @map("expires_at") @db.Timestamp(0)
 
   user        User      @relation(fields: [userId], references: [id])
@@ -225,6 +254,7 @@ model PhotoSet {
 
   @@index([userId, createdAt], map: "idx_photo_set_user_created")
   @@index([expiresAt], map: "idx_photo_set_expires")
+  @@index([sourceBookId], map: "idx_photo_set_source_book")
   @@map("photo_set")
 }
 
@@ -237,6 +267,18 @@ model Photo {
   imageUrl      String   @map("image_url") @db.VarChar(512)
   ocrText       String?  @map("ocr_text") @db.Text
   ocrCorrected  Int      @default(0) @map("ocr_corrected") @db.TinyInt
+  /// 框选区域(数组)。结构:
+  /// [{
+  ///   id: string,                        // 客户端生成的稳定 id
+  ///   bbox: [x, y, w, h],                // 0-1 归一化或像素均可,前后端约定
+  ///   coord: 'normalized' | 'pixel',     // 默认 'normalized'
+  ///   kind: 'text' | 'chart' | 'formula' | 'table',
+  ///   ocr_text?: string,                 // 仅 kind=text/formula/table 时有
+  ///   chart_data?: object,               // kind=chart 时,LLM 视觉提取的结构化数据
+  ///   corrected: 0|1,                    // 是否人工已校对
+  ///   note?: string,
+  /// }]
+  regions       Json?
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
   photoSet      PhotoSet @relation(fields: [photoSetId], references: [id])
@@ -426,6 +468,24 @@ model AdminLog {
   @@index([adminId, createdAt], map: "idx_admin_log_admin_time")
   @@index([targetType, targetId], map: "idx_admin_log_target")
   @@map("admin_log")
+}
+
+/// 收藏(用户 → 书)
+/// V2 启用 - M9 落地。一条记录代表一个用户对一本书的收藏关系。
+/// 列表按 createdAt desc 取, 查询自带 user_id + book_id 双索引
+model Favorite {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  userId    BigInt   @map("user_id") @db.UnsignedBigInt
+  bookId    BigInt   @map("book_id") @db.UnsignedBigInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  user      User     @relation(fields: [userId], references: [id])
+  book      Book     @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId], map: "uk_favorite_user_book")
+  @@index([userId, createdAt], map: "idx_favorite_user_created")
+  @@index([bookId], map: "idx_favorite_book")
+  @@map("favorite")
 }
 
 /// 系统配置

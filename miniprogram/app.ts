@@ -2,19 +2,9 @@
  * App 入口
  *
  * 注:全局 IAppOption 类型来自 types/app.d.ts(declare global), TS 自动加载
- *
- * 启动时统一把:
- *  1) 用户态从 storage hydrate 进 userStore + 给 services/http 注入 token accessor
- *  2) 网络监听初始化(给页面订阅断网/恢复)
- *  3) 全局错误上报(Sentry 接入位)
- *  4) 埋点全局上下文(track 的 user_id 取 userStore)
  */
 
-import { STORAGE_KEYS } from './config/constants';
-import { initNetworkWatcher } from './utils/network';
-import { flushTrackerOnHide, track } from './utils/tracker';
 import { userStore } from './stores/user';
-import { getStorage, setStorage } from './utils/storage';
 
 App<IAppOption>({
   globalData: {
@@ -23,55 +13,44 @@ App<IAppOption>({
     isFirstLaunch: false,
   },
 
-  onLaunch(opts) {
+  onLaunch() {
     const accountInfo = wx.getAccountInfoSync();
     console.log('[App] 启动环境:', accountInfo.miniProgram.envVersion);
+
+    // 关键:必须在任何页面 onLoad 之前完成 hydrate, 否则 store 永远是登出态
+    // 同时它会 bindTokenAccessor 让 services/http 走 store 而非裸 storage
+    userStore.hydrate();
+    if (userStore.accessToken) {
+      void userStore.refreshMe();
+    }
 
     try {
       const sysInfo = wx.getDeviceInfo();
       const winInfo = wx.getWindowInfo();
-      this.globalData.systemInfo = {
-        ...sysInfo,
-        ...winInfo,
-      } as unknown as WechatMiniprogram.SystemInfo;
+      // 新 API 拆分了若干字段, 业务侧只用其中很小的子集; 用 cast 兼容旧 SystemInfo 类型
+      this.globalData.systemInfo = { ...sysInfo, ...winInfo } as unknown as WechatMiniprogram.SystemInfo;
     } catch {
-      this.globalData.systemInfo = wx.getSystemInfoSync() as WechatMiniprogram.SystemInfo;
-    }
-
-    this.globalData.launchScene = opts.scene;
-
-    // 1) 注水 user store + 把 token 接入 services/http
-    userStore.hydrate();
-    this.globalData.accessToken = userStore.accessToken;
-    this.globalData.refreshToken = userStore.refreshToken;
-    if (userStore.user) this.globalData.userInfo = userStore.user;
-
-    // 2) 全局网络监听
-    initNetworkWatcher();
-
-    // 3) 首次启动判定(用 storage 标记)
-    const onboardingDone = getStorage<boolean>(STORAGE_KEYS.ONBOARDING_DONE, false);
-    this.globalData.isFirstLaunch = !onboardingDone;
-    if (!onboardingDone) {
-      // 先不写 true, 等用户在引导页点完「立即开始」再标记
-      setStorage(STORAGE_KEYS.ONBOARDING_DONE, false);
-    }
-
-    // 4) 启动埋点
-    track('app_launch', { scene: opts.scene });
-
-    // 5) 已登录就异步刷统计/配额
-    if (userStore.isLoggedIn) {
-      void userStore.refreshMe();
+      // 兼容旧版基础库,降级到 getSystemInfoSync
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      this.globalData.systemInfo = wx.getSystemInfoSync();
     }
   },
 
   onShow() {
-    track('app_show');
+    // M8 起接入埋点
+
+    // 隐藏小程序右上角胶囊左侧的"返回首页"按钮
+    // 仅在用户从分享卡片等场景进入非首页时出现, 主流程里不需要
+    try {
+      if (typeof wx.hideHomeButton === 'function') {
+        wx.hideHomeButton({ fail: () => undefined });
+      }
+    } catch {
+      // older 基础库, 忽略
+    }
   },
 
   onHide() {
-    track('app_hide');
-    flushTrackerOnHide();
+    // M8 起接入埋点
   },
 });

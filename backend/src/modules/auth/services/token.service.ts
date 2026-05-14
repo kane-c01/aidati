@@ -15,7 +15,7 @@ export interface TokenPair {
 
 interface SignArgs {
   userId: bigint;
-  openid: string;
+  openid: string | null;
   role: UserRoleName;
 }
 

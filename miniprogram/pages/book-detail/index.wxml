@@ -13,16 +13,26 @@
 <view wx:elif="{{book}}" class="bd">
   <!-- 顶部封面 + 标题 -->
   <view class="bd__hero">
-    <image
-      class="bd__cover"
-      mode="aspectFill"
-      src="{{book.cover_url || '/assets/cover-placeholder.png'}}"
-    />
+    <view class="bd__cover book-title-cover book-title-cover--xl {{ coverToneClass }}">
+      <text class="book-title-cover__title">{{ book.title }}</text>
+      <text class="book-title-cover__author">{{ book.author || '匿名' }}</text>
+    </view>
     <text class="bd__title">《{{book.title}}》</text>
-    <text class="bd__author">{{book.author}}{{book.category ? ' · ' + book.category : ''}}</text>
+    <text class="bd__author">{{book.author || '匿名'}}</text>
     <view class="bd__tags">
       <view wx:if="{{book.is_recommended}}" class="bd__tag bd__tag--primary">推荐</view>
       <view wx:for="{{book.tags}}" wx:key="*this" class="bd__tag">{{item}}</view>
+    </view>
+    <view
+      class="bd__fav {{ book.is_favorited ? 'bd__fav--active' : '' }}"
+      hover-class="bd__fav--hover"
+      hover-stay-time="80"
+      bindtap="onToggleFavorite"
+    >
+      <view class="bd__fav-ico">
+        <view class="bd__fav-star"></view>
+      </view>
+      <text class="bd__fav-label">{{ book.is_favorited ? '已收藏' : '收藏' }}</text>
     </view>
   </view>
 
@@ -41,9 +51,35 @@
     </view>
   </view>
 
+  <!-- 双写的拍照集入口(M8 PR2.6) — 仅 linked_photo_set_id 存在时显示 -->
+  <view
+    wx:if="{{book.linked_photo_set_id}}"
+    class="bd__photo-set-card"
+    hover-class="bd__photo-set-card--hover"
+    hover-stay-time="80"
+    bindtap="onJumpPhotoSet"
+  >
+    <view class="bd__photo-set-ico">
+      <view class="bd__photo-set-cam"></view>
+      <view class="bd__photo-set-cam-lens"></view>
+    </view>
+    <view class="bd__photo-set-meta">
+      <text class="bd__photo-set-title">逐页校对原始页面</text>
+      <text class="bd__photo-set-sub">PDF 已自动拆图, 可手动修正每页 OCR 文本</text>
+    </view>
+    <view class="bd__photo-set-arrow"></view>
+  </view>
+
   <!-- 章节 -->
   <view class="bd__section card">
-    <text class="bd__section-title">章节{{ chapters.length ? '(共 ' + chapters.length + ' 章)' : '' }}</text>
+    <view class="bd__section-head">
+      <text class="bd__section-title">
+        章节{{ chapters.length ? '(共 ' + chapters.length + ' 章)' : '' }}
+      </text>
+      <text wx:if="{{chapters.length}}" class="bd__section-hint">
+        点选章节可缩小阅读 / 出题范围
+      </text>
+    </view>
     <empty-state
       wx:if="{{!chapters.length}}"
       title="暂无章节信息"
@@ -60,7 +96,13 @@
         <view class="bd__chapter-tick">{{ selectedChapterIds[item.id] ? '✓' : '' }}</view>
         <view class="bd__chapter-body">
           <text class="bd__chapter-title">第{{item.order_no}}章 · {{item.title}}</text>
-          <text wx:if="{{item.start_page}}" class="bd__chapter-page">{{item.start_page}}-{{item.end_page}} 页</text>
+          <view class="bd__chapter-meta">
+            <text wx:if="{{item.start_page}}" class="bd__chapter-page">{{item.start_page}}-{{item.end_page}} 页</text>
+            <text
+              wx:if="{{item.has_content}}"
+              class="bd__chapter-flag bd__chapter-flag--ready"
+            >可阅读</text>
+          </view>
         </view>
       </view>
     </view>
@@ -69,11 +111,24 @@
   <ai-disclaimer variant="block" />
 
   <view class="bd__action safe-area-bottom">
-    <button
-      class="btn-primary"
-      bindtap="onStartGenerate"
-    >
-      {{ selectedCount > 0 ? '按选中章节出题(' + selectedCount + ')' : '整本书出题' }}
-    </button>
+    <view wx:if="{{importStatusLabel}}" class="bd__status-tip">
+      {{ importStatusLabel }}
+    </view>
+    <view class="bd__action-row">
+      <button
+        class="btn-ghost bd__action-btn bd__action-btn--read"
+        disabled="{{ actionsDisabled }}"
+        bindtap="onStartRead"
+      >
+        {{ readBtnLabel }}
+      </button>
+      <button
+        class="btn-primary bd__action-btn bd__action-btn--paper"
+        disabled="{{ actionsDisabled }}"
+        bindtap="onStartGenerate"
+      >
+        {{ paperBtnLabel }}
+      </button>
+    </view>
   </view>
 </view>

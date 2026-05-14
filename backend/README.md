@@ -56,8 +56,7 @@ curl http://localhost:3000/version
 - **M0**:✅ 项目脚手架 + 健康检查 + Prisma 占位
 - **M1**:✅ 数据库 schema(14 张 MVP 表)+ 微信登录 + JWT + 用户模块 + 全局基座
 - **M2**:✅ 文件上传(MinIO/COS S3 直传)+ 拍照集 + 微信 OCR 主路径
-- **M3**:✅ AI 出题 + 批改(BullMQ 异步 + LLM 主备链 + 客观题本地批 + 主观题 AI 批 + 错题自动入库)
-- **M4**:⏳ 错题本 HTTP 接口 + 学习中心(M3 已联通自动入库)
+- **M3**:⏳ AI 出题 + 批改(核心)
 
 ### M1 已实现接口(均已通过本地 e2e 验证)
 
@@ -70,7 +69,7 @@ curl http://localhost:3000/version
 | `/v1/auth/cancel-account` `/v1/user/cancel` | POST | ✅ | 注销账号(7 天冷静期) |
 | `/v1/auth/cancel-account/cancel` `/v1/user/cancel/cancel` | POST | ✅ | 撤销注销 |
 | `/v1/user/me` | GET | ✅ | 个人资料 + 学习统计 + 今日配额 |
-| `/v1/user/me` | PATCH | ✅ | 更新昵称/头像/未成年人模式 |
+| `/v1/user/me` | PATCH | ✅ | 更新昵称/头像 |
 | `/v1/user/me/privacy` | GET | ✅ | 隐私协议状态 |
 | `/v1/user/me/privacy/agree` | POST | ✅ | 重新同意隐私协议 |
 | `/v1/feedback` | POST | ✅ | 用户反馈(暂落 admin_log)|
@@ -82,12 +81,6 @@ curl http://localhost:3000/version
 | `/v1/photo-sets/:id/ocr` | POST | ✅ | 触发 OCR(mode=`wechat`/`mock`/`tencent`-pending) |
 | `/v1/photo-sets/:id/ocr` | GET | ✅ | 状态 + 合并文本 + 每张图的 ocr_text |
 | `/v1/photo-sets/:id/ocr` | PATCH | ✅ | 客户端微信 OCR 写回 / 用户校对 |
-| `/v1/papers` | POST | ✅ | 创建并触发出题(202, 走 BullMQ + ai-service)|
-| `/v1/papers/:id` | GET | ✅ | 查询试卷 / 题目(graded 之后才返回 correct_answer)|
-| `/v1/papers/:id/cancel` | POST | ✅ | 30s 内取消不扣额度 |
-| `/v1/papers/:id/draft` | POST/GET | ✅ | 暂存 / 取回答题进度 |
-| `/v1/papers/:id/submit` | POST | ✅ | 提交答卷, 客观题立即批 + 主观题入队 |
-| `/v1/papers/:id/result` | GET | ✅ | 批改结果 + summary(total_score/max_score/accuracy) |
 
 ### 本地启动检查清单
 

@@ -19,6 +19,7 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.routers import extract as extract_router
 from app.routers import generate as generate_router
 from app.routers import grade as grade_router
 
@@ -41,7 +42,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="AI 出题学习 - AI 编排服务",
+    title="考题魔盒 - AI 编排服务",
     version=settings.version,
     docs_url="/docs" if settings.env != "production" else None,
     redoc_url=None,
@@ -49,6 +50,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(extract_router.router)
 app.include_router(generate_router.router)
 app.include_router(grade_router.router)
 

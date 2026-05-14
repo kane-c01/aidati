@@ -1,24 +1,10 @@
 {
   "$schema": "https://developers.weixin.qq.com/miniprogram/dev/devtools/projectsetting.html",
-  "projectname": "AI%E6%99%BA%E8%83%BD%E5%87%BA%E9%A2%98",
+  "projectname": "ai-quiz-miniprogram",
   "setting": {
     "compileHotReLoad": true,
-    "urlCheck": false,
-    "coverView": true,
-    "lazyloadPlaceholderEnable": false,
-    "skylineRenderEnable": false,
-    "preloadBackgroundData": false,
-    "autoAudits": false,
-    "useApiHook": true,
-    "showShadowRootInWxmlPanel": true,
-    "useStaticServer": false,
-    "useLanDebug": false,
-    "showES6CompileOption": false,
-    "checkInvalidKey": true,
-    "ignoreDevUnusedFiles": true,
-    "bigPackageSizeSupport": false,
-    "useIsolateContext": true
+    "urlCheck": false
   },
-  "libVersion": "3.15.2",
+  "libVersion": "3.4.4",
   "condition": {}
 }

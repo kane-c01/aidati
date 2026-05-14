@@ -69,20 +69,45 @@ export const COUNT_LIMIT = 50;
 /** 单次拍照最大页数(PRD §4.3) */
 export const MAX_PHOTO_PAGES = 20;
 
-/** 出题加载页指数退避轮询参数(04-前端规范 §3.5) */
+/** 出题加载页指数退避轮询参数(04-前端规范 §3.5)
+ *
+ * 节奏说明:
+ * - 真实 LLM(qwen-plus)出 10 题约 30-40s, 极端可达 60-90s; mock 秒返回。
+ * - 1.5s → 0.8s 是为了 ready 后跳页快, 但 TIMEOUT_MS 不能是 60s ——
+ *   60s 就给"AI 思考超时了"会把已经成功跑完但还没轮到 detail 的 paper 误判为失败,
+ *   而且后端 axios → ai-service 本身就是 90s, 所以前端至少给 150s 才合理。
+ */
 export const PAPER_POLL = {
-  INITIAL_INTERVAL_MS: 1500,
-  STEP_MS: 500,
-  MAX_INTERVAL_MS: 3000,
-  TIMEOUT_MS: 60_000,
+  INITIAL_INTERVAL_MS: 800,
+  STEP_MS: 400,
+  MAX_INTERVAL_MS: 2000,
+  /** 总超时:留足一次后端重试(约 90s × 1.5 安全余量) */
+  TIMEOUT_MS: 150_000,
   CANCEL_WINDOW_MS: 30_000,
+  /** 进度条满格阈值:进度按 BAR_FULL_MS 来推, 后面"还在思考"文案不再让进度条继续涨 */
+  BAR_FULL_MS: 60_000,
 } as const;
 
-/** OCR 轮询(03-API §6) */
+/** OCR 轮询(03-API §6)
+ *
+ * 节奏说明:
+ * - 后端 runVisionOcr 4 路并发, 单批 5-15s。
+ *   5 张图 ≈ 12-15s, 10 张图 ≈ 25-30s, 20 张图 ≈ 50-60s。
+ * - 后端 startOcr 返回的 estimated_seconds = 8 * pages + 5,
+ *   20 页就估算 165s, 前端 TIMEOUT_MS 必须 ≥ 这个数, 否则后端还没跑完就被前端误判为失败。
+ * - SOFT_TIMEOUT_MS 是「自动停止轮询的下限」, 不是「展示『失败』的硬阈值」;
+ *   到点后页面会切到「已识别多少, 是否继续等待」, 不会直接抛 toast。
+ * - HARD_TIMEOUT_MS 是真正的兜底, 超过这个就算后端卡住, 直接置 failed。
+ */
 export const OCR_POLL = {
   INITIAL_INTERVAL_MS: 1500,
   MAX_INTERVAL_MS: 2500,
-  TIMEOUT_MS: 60_000,
+  /** 第一次提示「再等等」的时长(自适应文案) */
+  SOFT_HINT_AT_MS: 30_000,
+  /** 给用户选择「再等等 / 先用现有结果」的软超时 */
+  SOFT_TIMEOUT_MS: 180_000,
+  /** 真·硬超时, 后端卡死的兜底 */
+  HARD_TIMEOUT_MS: 240_000,
 } as const;
 
 /** Storage Key 命名空间 */

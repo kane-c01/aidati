@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 
+import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const routes: RouteRecordRaw[] = [
@@ -10,9 +11,11 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '登录', public: true },
   },
   {
+    // 所有需要登录态 + 后台外壳的页面挂在 AdminLayout 下
     path: '/',
-    component: () => import('@/layouts/AdminLayout.vue'),
+    component: AdminLayout,
     redirect: '/dashboard',
+    meta: { requiresAuth: true },
     children: [
       {
         path: 'dashboard',
@@ -33,19 +36,26 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '用户管理' },
       },
       {
+        path: 'photos',
+        name: 'PhotoSets',
+        component: () => import('@/pages/photos/index.vue'),
+        meta: { title: '拍照集' },
+      },
+      {
         path: 'audits',
         name: 'Audits',
         component: () => import('@/pages/audits/index.vue'),
-        meta: { title: '内容审核日志' },
+        meta: { title: '内容审核' },
       },
       {
         path: 'configs',
         name: 'Configs',
         component: () => import('@/pages/configs/index.vue'),
-        meta: { title: '系统配置', requiresSuperAdmin: true },
+        meta: { title: '系统配置 · AI 密钥' },
       },
     ],
   },
+  // 兜底 404 → 跳工作台(已登录)或登录页(未登录), 由守卫决定
   {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard',
@@ -62,29 +72,27 @@ router.beforeEach((to, _from, next) => {
   if (!auth.hydrated) auth.hydrate();
 
   const title = to.meta?.title as string | undefined;
-  document.title = title ? `${title} · AI 出题学习管理后台` : 'AI 出题学习 · 管理后台';
+  document.title = title ? `${title} · 考题魔盒` : '考题魔盒 · 管理后台';
 
-  if (to.meta?.public) {
+  const isPublic = to.meta?.public === true;
+  const requiresAuth = to.matched.some((r) => r.meta?.requiresAuth);
+
+  if (isPublic) {
+    // 已登录用户进 /login 直接送到工作台
     if (to.path === '/login' && auth.isLoggedIn) {
-      next('/dashboard');
+      next({ path: '/dashboard', replace: true });
       return;
     }
     next();
     return;
   }
 
-  if (!auth.isLoggedIn) {
+  if (requiresAuth && !auth.isLoggedIn) {
     next({ path: '/login', query: { redirect: to.fullPath } });
     return;
   }
 
-  if (!auth.isAdminLike) {
-    // 普通用户(role=user)误进
-    next({ path: '/login' });
-    return;
-  }
-
-  if (to.meta?.requiresSuperAdmin && !auth.isSuperAdmin) {
+  if (to.meta?.superAdminOnly === true && !auth.isSuperAdmin) {
     next({ path: '/dashboard' });
     return;
   }

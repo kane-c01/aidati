@@ -105,27 +105,47 @@ export class PaperGenerateProcessor extends WorkerHost {
       });
 
       // 落库 question 表
+      // 关键: paper.status 必须仍是 generating 才允许写回 ready,
+      // 防止"用户已 cancel(status=failed)但 worker 跑完后把它复活成 ready"的并发竞态。
+      // 时序示例(实际线上观察到):
+      //   T0  worker 开始(status=generating)
+      //   T1  用户点取消 → cancelPaper update status=failed
+      //   T2  worker 跑完, 直接 update status=ready  ← 覆盖了 failed, 错!
+      // 修复: 用 updateMany + where 限定 generating, 受影响 0 行 → 抛错让事务回滚, questions 不落库
       const cost = new Prisma_DecimalLikeCost(resp.usage.cost_yuan);
-      await this.prisma.$transaction(async (tx) => {
-        // 清空可能的残留(重试场景)
-        await tx.question.deleteMany({ where: { paperId: paper.id } });
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          // 清空可能的残留(重试场景)
+          await tx.question.deleteMany({ where: { paperId: paper.id } });
 
-        await tx.question.createMany({
-          data: resp.questions.map((q) => this.toQuestionCreate(paper.id, q)),
-        });
+          await tx.question.createMany({
+            data: resp.questions.map((q) => this.toQuestionCreate(paper.id, q)),
+          });
 
-        await tx.paper.update({
-          where: { id: paper.id },
-          data: {
-            status: PaperStatus.ready,
-            totalQuestions: resp.questions.length,
-            llmModel: resp.usage.model,
-            llmTokensInput: resp.usage.tokens_input,
-            llmTokensOutput: resp.usage.tokens_output,
-            llmCost: cost.toPrismaDecimal(),
-          },
+          const updated = await tx.paper.updateMany({
+            where: { id: paper.id, status: PaperStatus.generating },
+            data: {
+              status: PaperStatus.ready,
+              totalQuestions: resp.questions.length,
+              llmModel: resp.usage.model,
+              llmTokensInput: resp.usage.tokens_input,
+              llmTokensOutput: resp.usage.tokens_output,
+              llmCost: cost.toPrismaDecimal(),
+            },
+          });
+          if (updated.count === 0) {
+            throw new PaperStatusChangedError();
+          }
         });
-      });
+      } catch (err) {
+        if (err instanceof PaperStatusChangedError) {
+          this.logger.warn(
+            `generate.skip_write_back paper=${paper.id}: paper 已被取消或终态, worker 不覆盖`,
+          );
+          return { ok: true, total: 0 };
+        }
+        throw err;
+      }
 
       this.logger.log(
         `generate.ok paper=${paper.id} model=${resp.usage.model} n=${resp.questions.length} cost=¥${resp.usage.cost_yuan}`,
@@ -179,5 +199,13 @@ class Prisma_DecimalLikeCost {
   toPrismaDecimal(): Prisma.Decimal | number {
     // Prisma 接受 number / string, 写库后会转 Decimal
     return Math.round(this.value * 10000) / 10000;
+  }
+}
+
+/** Worker 写回时发现 paper 已不是 generating(用户已 cancel 等)抛此错,触发事务回滚 */
+class PaperStatusChangedError extends Error {
+  constructor() {
+    super('paper status changed during generation');
+    this.name = 'PaperStatusChangedError';
   }
 }

@@ -16,11 +16,6 @@ export class ListBooksQuery {
   keyword?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  category?: string;
-
-  @IsOptional()
   @IsIn(SORT_KEYS)
   sort: BookSortKey = 'recommended';
 
@@ -34,6 +29,6 @@ export class ListBooksQuery {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(100)
   page_size: number = 20;
 }

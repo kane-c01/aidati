@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.llm_runtime import LlmRuntimeConfig
+
 import structlog
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -87,6 +92,55 @@ def build_chain() -> list[LLMProvider]:
     if not chain:
         chain = [MockLLMProvider()]
     logger.info("llm.chain.built", chain=[p.name for p in chain])
+    return chain
+
+
+def build_chain_from_runtime(rt: "LlmRuntimeConfig | None" = None) -> list[LLMProvider]:
+    """按后端注入的运行时配置构建 provider 链; 若 rt 为 None 退化为 build_chain()"""
+    if rt is None:
+        return build_chain()
+    if settings.llm_force_mock:
+        return [MockLLMProvider()]
+
+    chain: list[LLMProvider] = []
+
+    def _try_add(name: str, model: str, api_key: str | None, base_url: str | None) -> None:
+        key = (api_key or "").strip()
+        if not key:
+            return
+        cost = _COSTS.get(model, (0.002, 0.004))
+        chain.append(
+            OpenAICompatProvider(
+                name=name,
+                base_url=(base_url or "").strip() or getattr(settings, f"{name}_base_url", ""),
+                api_key=key,
+                model=model,
+                cost_per_1k_input=cost[0],
+                cost_per_1k_output=cost[1],
+            )
+        )
+
+    primary = (rt.primary_model or "deepseek-chat").strip()
+    backup = (rt.backup_model or "qwen-plus").strip()
+
+    if "deepseek" in primary:
+        _try_add("deepseek", primary, rt.deepseek_api_key or settings.deepseek_api_key, rt.deepseek_base_url)
+    elif "qwen" in primary:
+        _try_add("qwen", primary, rt.qwen_api_key or settings.qwen_api_key, rt.qwen_base_url)
+    elif "glm" in primary:
+        _try_add("glm", primary, rt.glm_api_key or settings.glm_api_key, rt.glm_base_url)
+
+    if "deepseek" in backup and all(p.name != "deepseek" for p in chain):
+        _try_add("deepseek", backup, rt.deepseek_api_key or settings.deepseek_api_key, rt.deepseek_base_url)
+    if "qwen" in backup and all(p.name != "qwen" for p in chain):
+        _try_add("qwen", backup, rt.qwen_api_key or settings.qwen_api_key, rt.qwen_base_url)
+    if "glm" in backup and all(p.name != "glm" for p in chain):
+        _try_add("glm", backup, rt.glm_api_key or settings.glm_api_key, rt.glm_base_url)
+
+    if not chain:
+        chain = [MockLLMProvider()]
+    chain.append(MockLLMProvider())
+    logger.info("llm.chain_from_runtime.built", chain=[p.name for p in chain])
     return chain
 
 

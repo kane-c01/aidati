@@ -150,10 +150,35 @@ export class ContextBuilderService {
       throw new BusinessException(ERROR_CODES.RESOURCE_NOT_FOUND, '拍照集已过期');
     }
 
+    // M9: 用户在校对页可勾选要计入出题的页;有勾选时按 id 集合过滤(无视 set.ocrText 缓存)
+    const config = paper.config as { selected_photo_ids?: string[] } | null;
+    const selectedIds = (config?.selected_photo_ids ?? [])
+      .map((v) => {
+        try {
+          return BigInt(v);
+        } catch {
+          return null;
+        }
+      })
+      .filter((v): v is bigint => v !== null);
+    const useSelection = selectedIds.length > 0;
+    const selectedSet = new Set(selectedIds.map((v) => v.toString()));
+
+    const filteredPhotos = useSelection
+      ? set.photos.filter((p) => selectedSet.has(p.id.toString()))
+      : set.photos;
+
+    if (useSelection && filteredPhotos.length === 0) {
+      throw new BusinessException(
+        ERROR_CODES.PARAM_INVALID,
+        '勾选的页没有匹配到拍照集内容, 请回校对页重新选',
+      );
+    }
+
     const text =
-      set.ocrText && set.ocrText.length > 0
+      !useSelection && set.ocrText && set.ocrText.length > 0
         ? set.ocrText
-        : set.photos
+        : filteredPhotos
             .map((p) =>
               p.ocrText && p.ocrText.length > 0 ? `[第${p.orderNo}页]\n${p.ocrText}` : '',
             )
@@ -161,7 +186,12 @@ export class ContextBuilderService {
             .join('\n\n');
 
     const normalized = this.normalize(text);
-    this.assertMinLen(normalized, 'OCR 文本为空, 请先完成 OCR 识别 / 校对再出题');
+    this.assertMinLen(
+      normalized,
+      useSelection
+        ? '勾选的页 OCR 文本为空, 请补充识别 / 校对再出题'
+        : 'OCR 文本为空, 请先完成 OCR 识别 / 校对再出题',
+    );
 
     return {
       context_text: normalized,

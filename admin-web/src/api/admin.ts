@@ -7,6 +7,9 @@ import type {
   AdminBookDetail,
   AdminBookView,
   AdminDashboard,
+  AdminPhotoSetDetail,
+  AdminPhotoSetView,
+  AdminPhotoView,
   AdminUserDetail,
   AdminUserView,
   ChapterImportItem,
@@ -14,8 +17,10 @@ import type {
   LoginPayload,
   LoginResult,
   ModerationLogView,
+  OcrStatus,
   PageList,
   SystemConfigView,
+  UpdateAdminPhotoPayload,
   UpdateBookPayload,
   UserMe,
 } from '@/types/api';
@@ -42,6 +47,8 @@ export const authApi = {
 
 export const dashboardApi = {
   get: (): Promise<AdminDashboard> => api.get('/admin/dashboard'),
+  /** 测试 ai-service 是否在线 */
+  aiHealth: (): Promise<{ ok: boolean; ts: string }> => api.get('/admin/ai-health'),
 };
 
 // ===== 书籍 =====
@@ -49,6 +56,7 @@ export const dashboardApi = {
 export interface ListBooksParams {
   keyword?: string;
   status?: '1' | '0' | '-1' | 'all';
+  source?: 'admin' | 'user_upload' | 'public_domain' | 'all';
   created_by?: string;
   page?: number;
   page_size?: number;
@@ -57,7 +65,10 @@ export interface ListBooksParams {
 export const bookApi = {
   list: (params: ListBooksParams): Promise<PageList<AdminBookView>> =>
     api.get('/admin/books', params),
-  detail: (id: string): Promise<AdminBookDetail> => api.get(`/admin/books/${id}`),
+  detail: (
+    id: string,
+    params?: { include_chapter_full?: number | boolean },
+  ): Promise<AdminBookDetail> => api.get(`/admin/books/${id}`, params),
   create: (payload: CreateBookPayload): Promise<AdminBookView> =>
     api.post('/admin/books', payload),
   update: (id: string, payload: UpdateBookPayload): Promise<AdminBookView> =>
@@ -72,6 +83,12 @@ export const bookApi = {
     payload: { chapters: ChapterImportItem[]; replace?: boolean },
   ): Promise<{ imported: number; total: number }> =>
     api.post(`/admin/books/${id}/chapters`, payload),
+  /** PDF 自动抽章节(M8):服务端 pdfplumber 抽文字 + LLM 切章 */
+  importPdf: (
+    id: string,
+    payload?: { pdf_url?: string; max_chapters?: number },
+  ): Promise<{ imported: number; total: number; pages: number; chapter_hints: number }> =>
+    api.post(`/admin/books/${id}/import-pdf`, payload ?? {}),
 };
 
 // ===== 用户 =====
@@ -123,4 +140,30 @@ export interface ListAuditsParams {
 export const moderationApi = {
   list: (params: ListAuditsParams): Promise<PageList<ModerationLogView>> =>
     api.get('/admin/moderation-logs', params),
+};
+
+// ===== 拍照集 =====
+
+export interface ListPhotoSetsParams {
+  keyword?: string;
+  user_id?: string;
+  ocr_status?: OcrStatus | 'all';
+  page?: number;
+  page_size?: number;
+}
+
+export const photoSetApi = {
+  list: (params: ListPhotoSetsParams): Promise<PageList<AdminPhotoSetView>> =>
+    api.get('/admin/photo-sets', params),
+  detail: (id: string): Promise<AdminPhotoSetDetail> =>
+    api.get(`/admin/photo-sets/${id}`),
+  patchPhoto: (
+    photoId: string,
+    payload: UpdateAdminPhotoPayload,
+  ): Promise<AdminPhotoView> => api.patch(`/admin/photos/${photoId}`, payload),
+  /** 触发单 region 视觉识别(M8) */
+  recognizeRegion: (photoId: string, regionId: string): Promise<AdminPhotoView> =>
+    api.post(`/admin/photos/${photoId}/regions/${encodeURIComponent(regionId)}/recognize`),
+  remove: (id: string): Promise<{ ok: true; deleted_photos: number }> =>
+    api.delete(`/admin/photo-sets/${id}`),
 };

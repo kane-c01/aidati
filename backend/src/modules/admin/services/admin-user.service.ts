@@ -22,8 +22,6 @@ export interface AdminUserView {
   avatar_url: string | null;
   role: UserRole;
   status: number;
-  is_minor: number;
-  minor_mode_enabled: number;
   privacy_version: string | null;
   privacy_agreed_at: string | null;
   last_login_at: string | null;
@@ -248,8 +246,6 @@ export class AdminUserService {
       avatar_url: u.avatarUrl,
       role: u.role,
       status: u.status,
-      is_minor: u.isMinor,
-      minor_mode_enabled: u.minorModeEnabled,
       privacy_version: u.privacyVersion,
       privacy_agreed_at: u.privacyAgreedAt ? u.privacyAgreedAt.toISOString() : null,
       last_login_at: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,

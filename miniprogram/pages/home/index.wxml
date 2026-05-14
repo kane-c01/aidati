@@ -1,66 +1,174 @@
 <view class="home">
-  <!-- 顶部搜索 + 配额 -->
-  <view class="home__head">
-    <view class="home__search">
-      <text class="home__search-icon">🔍</text>
-      <input
-        class="home__search-input"
-        placeholder="搜索书名 / 作者..."
-        value="{{keyword}}"
-        confirm-type="search"
-        bindinput="onKeywordInput"
-        bindconfirm="onSearch"
-      />
-      <text wx:if="{{keyword}}" class="home__search-clear" bindtap="onClearKeyword">✕</text>
+  <!-- 顶栏:仅左侧标题 + 右侧通知与头像 -->
+  <view class="topbar">
+    <view class="topbar__brand">
+      <text class="topbar__title">书库</text>
+      <text class="topbar__sub">{{ greetingPrefix }} {{userStore.user.nickname || '同学'}}</text>
     </view>
-    <view wx:if="{{userStore.isLoggedIn}}" class="home__quota" bindtap="onQuotaTap">
-      <quota-badge
-        wx:if="{{userStore.quota}}"
-        used="{{userStore.quota.used_quota}}"
-        limit="{{userStore.quota.limit}}"
-      />
+    <view class="topbar__actions">
+      <view
+        class="topbar__btn"
+        hover-class="topbar__btn--hover"
+        hover-stay-time="80"
+        bindtap="onQuickMistake"
+      >
+        <view class="ico-bell"></view>
+        <view wx:if="{{mistakeBadge > 0}}" class="topbar__badge">
+          {{ mistakeBadge > 99 ? '99+' : mistakeBadge }}
+        </view>
+      </view>
+      <view
+        class="topbar__avatar"
+        hover-class="topbar__avatar--hover"
+        hover-stay-time="80"
+        bindtap="onAvatarTap"
+      >
+        <image
+          wx:if="{{userStore.user.avatar_url}}"
+          class="topbar__avatar-img"
+          src="{{userStore.user.avatar_url}}"
+          mode="aspectFill"
+        />
+        <text wx:else class="topbar__avatar-letter">{{ avatarLetter }}</text>
+      </view>
     </view>
   </view>
 
-  <!-- 分类 chips -->
-  <view class="home__categories">
-    <chip-group
-      options="{{categoryOptions}}"
-      value="{{[selectedCategory]}}"
-      multiple="{{false}}"
-      bindchange="onCategoryChange"
+  <!-- 搜索 -->
+  <view class="search">
+    <view class="search__ico ico-search"></view>
+    <input
+      class="search__input"
+      placeholder="搜书名 / 作者 / ISBN"
+      placeholder-class="search__ph"
+      value="{{keyword}}"
+      confirm-type="search"
+      bindinput="onKeywordInput"
+      bindconfirm="onSearch"
     />
-  </view>
-
-  <!-- 列表区 -->
-  <view wx:if="{{loading && !books.length}}" class="home__loading">
-    <skeleton-list count="5" />
-  </view>
-
-  <empty-state
-    wx:elif="{{!loading && !books.length}}"
-    title="{{ keyword ? '没有找到相关书籍' : '书库还在筹建' }}"
-    description="{{ keyword ? '要不换个关键词试试?' : '我们正在补录公版书 / 教材' }}"
-    actionText="{{ keyword ? '清除搜索' : '' }}"
-    bind:action="onClearKeyword"
-  />
-
-  <view wx:else class="home__list">
-    <view wx:if="{{recommendedBooks.length}}" class="home__section">
-      <text class="home__section-title">✨ 推荐阅读</text>
+    <view
+      wx:if="{{keyword}}"
+      class="search__clear"
+      catchtap="onClearKeyword"
+    >
+      <view class="ico-close"></view>
     </view>
-    <book-card
-      wx:for="{{books}}"
-      wx:key="id"
-      book="{{item}}"
-      bind:tap="onBookTap"
+  </view>
+
+  <!-- Today 卡:配额 + 错题 + 拍照入口 -->
+  <view class="today" wx:if="{{userStore.isLoggedIn}}">
+    <view class="today__row">
+      <view class="today__col">
+        <text class="today__label">今日额度</text>
+        <view class="today__value">
+          <text class="today__num">{{ quotaRemain }}</text>
+          <text class="today__unit">/ {{ userStore.quota.limit || 0 }}</text>
+        </view>
+      </view>
+      <view class="today__divider"></view>
+      <view class="today__col">
+        <text class="today__label">待巩固</text>
+        <view class="today__value">
+          <text class="today__num">{{ mistakeBadge || 0 }}</text>
+          <text class="today__unit">题</text>
+        </view>
+      </view>
+    </view>
+    <view
+      class="today__cta"
+      hover-class="today__cta--hover"
+      hover-stay-time="80"
+      bindtap="onQuickPhoto"
+    >
+      <view class="today__cta-ico">
+        <view class="ico-camera-mini"></view>
+      </view>
+      <view class="today__cta-meta">
+        <text class="today__cta-title">拍页面 · AI 出题</text>
+        <text class="today__cta-desc">最多 20 页, 自动整理</text>
+      </view>
+      <view class="ico-arrow today__cta-arrow"></view>
+    </view>
+  </view>
+
+  <view wx:else class="today today--guest">
+    <view class="today__guest-text">
+      <text class="today__guest-title">还没有登录</text>
+      <text class="today__guest-desc">登录后看到学习数据 / 拍照出题</text>
+    </view>
+    <view class="today__guest-btn" bindtap="onLoginCta">
+      <text>登录</text>
+      <view class="ico-arrow"></view>
+    </view>
+  </view>
+
+  <!-- 内容区:首屏骨架 / 空态 / 推荐横滚 + 全部纵向 -->
+  <view class="list">
+    <view wx:if="{{homeLoading || (loading && !allBooks.length)}}">
+      <skeleton-list count="5" />
+    </view>
+
+    <empty-state
+      wx:elif="{{!loading && !allBooks.length}}"
+      title="{{ keyword ? '没找到相关书籍' : '书库还在筹建' }}"
+      description="{{ keyword ? '换个关键词试试' : '请管理员在后台「书籍管理」新建一本考证书,或上传 PDF' }}"
+      actionText="{{ keyword ? '清除搜索' : '去拍照' }}"
+      bind:action="onEmptyAction"
     />
-    <view class="home__loadmore" wx:if="{{books.length}}">
-      <text class="font-caption" wx:if="{{loading}}">加载中...</text>
-      <text class="font-caption" wx:elif="{{!hasMore}}">— 已经到底了 —</text>
-    </view>
+
+    <block wx:else>
+      <!-- 推荐(仅在无搜索且有推荐书时展示) -->
+      <view wx:if="{{!keyword && recommendedBooks.length}}" class="rec">
+        <view class="rec__head">
+          <text class="rec__title">推荐</text>
+          <text class="rec__count">{{recommendedBooks.length}} 本</text>
+        </view>
+        <scroll-view scroll-x="{{true}}" class="rec__scroll" enhanced="{{true}}" show-scrollbar="{{false}}">
+          <view
+            wx:for="{{recommendedBooks}}"
+            wx:key="id"
+            wx:for-item="rec"
+            class="rec__card"
+            data-id="{{rec.id}}"
+            hover-class="rec__card--hover"
+            hover-stay-time="80"
+            bindtap="onRecBookTap"
+          >
+            <view class="rec__cover book-title-cover book-title-cover--lg book-title-cover--tone-{{ rec._tone }}">
+              <text class="book-title-cover__title">{{ rec.title }}</text>
+              <text class="book-title-cover__author">{{ rec.author || '匿名' }}</text>
+            </view>
+            <text class="rec__name ellipsis-2">{{ rec.title }}</text>
+            <text class="rec__author ellipsis-1">{{ rec.author || '匿名' }}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 全部书 -->
+      <view class="all">
+        <view wx:if="{{!keyword}}" class="all__head">
+          <text class="all__title">全部书目</text>
+          <text class="all__count">{{ allBooks.length }} / {{ allBooks.length }}+</text>
+        </view>
+        <view class="all__list">
+          <book-card
+            wx:for="{{allBooks}}"
+            wx:key="id"
+            wx:for-item="item"
+            book="{{item}}"
+            fav-busy="{{ !!favBusySet[item.id] }}"
+            bind:tap="onBookTap"
+            bind:favoriteTap="onFavoriteTap"
+          />
+        </view>
+        <view class="loadmore" wx:if="{{allBooks.length}}">
+          <text wx:if="{{loading}}" class="loadmore__txt">加载中…</text>
+          <text wx:elif="{{!hasMore}}" class="loadmore__txt">— 已经到底了 —</text>
+        </view>
+      </view>
+    </block>
   </view>
 
-  <view class="home__tab-spacer"></view>
+  <view class="tab-spacer"></view>
   <custom-tab-bar active="home" />
 </view>

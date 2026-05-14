@@ -35,4 +35,20 @@ export class PhotoController {
   async remove(@CurrentUser() user: JwtPayload, @Param('id', ParseBigIntPipe) id: bigint) {
     return this.photoService.deletePhoto(BigInt(user.sub), id);
   }
+
+  /**
+   * POST /v1/photos/:id/regions/:rid/recognize —— 触发框选区域识别
+   * - kind=text/formula/table 返回 ocr_text
+   * - kind=chart 返回 chart_data(JSON)
+   * 服务侧 0 模型,转发至 ai-service(qwen-vl)
+   */
+  @Post(':id/regions/:rid/recognize')
+  @HttpCode(HttpStatus.OK)
+  async recognizeRegion(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Param('rid') rid: string,
+  ) {
+    return this.photoService.recognizeRegion(BigInt(user.sub), id, rid);
+  }
 }

@@ -6,8 +6,9 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.auth import require_internal_token
+from app.adapters.factory import LLMChain, build_chain_from_runtime
 from app.models import GradePaperRequest, GradePaperResponse
-from app.services.llm_client import LLMClient, get_llm_client
+from app.services.llm_client import LLMClient
 
 logger = structlog.get_logger()
 
@@ -25,7 +26,6 @@ router = APIRouter(
 )
 async def grade_paper(
     body: GradePaperRequest,
-    client: LLMClient = Depends(get_llm_client),
 ) -> GradePaperResponse:
     logger.info(
         "grade.start",
@@ -33,6 +33,8 @@ async def grade_paper(
         user_id=body.user_id,
         n=len(body.items),
     )
+    chain_list = build_chain_from_runtime(body.llm_runtime)
+    client = LLMClient(LLMChain(chain_list))
     try:
         results, usage = await client.grade_subjective(
             paper_id=body.paper_id,

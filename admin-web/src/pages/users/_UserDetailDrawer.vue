@@ -36,13 +36,6 @@
               >
                 {{ statusLabel }}
               </el-tag>
-              <el-tag
-                v-if="detail.is_minor === 1"
-                size="small"
-                type="warning"
-              >
-                未成年
-              </el-tag>
             </div>
           </div>
         </div>

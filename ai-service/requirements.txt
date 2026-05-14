@@ -12,3 +12,9 @@ orjson==3.10.13
 # M3 出题/批改 LLM 链路
 openai==1.59.3
 jsonschema==4.23.0
+# M8 视觉识别(框选 OCR / 表格 / 公式 / 图表)— 仅 Pillow 用于裁剪区域,无 GPU/无模型
+Pillow==11.0.0
+# M8 PDF 文字抽取(纯 Python 库, 无外部二进制,无 GPU)
+pdfplumber==0.11.4
+# M8 扫描版 PDF 兜底渲染(纯 Python wheel, 无 poppler)
+PyMuPDF>=1.27

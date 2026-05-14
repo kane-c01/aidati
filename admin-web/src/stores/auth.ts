@@ -61,8 +61,6 @@ export const useAuthStore = defineStore('auth', {
         nickname: res.user.nickname,
         avatar_url: res.user.avatar_url,
         role: res.user.role,
-        is_minor: res.user.is_minor,
-        minor_mode_enabled: res.user.minor_mode_enabled,
       };
       if (user.role !== 'admin' && user.role !== 'super_admin') {
         tokenStore.clear();

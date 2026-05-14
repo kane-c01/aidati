@@ -1,0 +1,55 @@
+<view class="rd">
+  <!-- 章节侧栏(顶部抽屉式) -->
+  <view class="rd__head">
+    <view class="rd__title-line">
+      <text class="rd__book-title">{{ bookTitle }}</text>
+      <text wx:if="{{!loading}}" class="rd__chapters-toggle" bindtap="onToggleToc">
+        {{ tocOpen ? '收起目录 ▲' : '目录 ▼' }}
+      </text>
+    </view>
+    <view wx:if="{{currentTitle}}" class="rd__chapter-title">{{ currentOrderNo }}. {{ currentTitle }}</view>
+  </view>
+
+  <view wx:if="{{tocOpen}}" class="rd__toc">
+    <view
+      wx:for="{{chapters}}"
+      wx:key="id"
+      class="rd__toc-row {{ item.id === currentChapterId ? 'rd__toc-row--active' : '' }}"
+      data-id="{{item.id}}"
+      bindtap="onPickChapter"
+    >
+      <text class="rd__toc-no">{{ item.order_no }}.</text>
+      <text class="rd__toc-title">{{ item.title }}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="rd__loading">章节加载中…</view>
+
+  <view wx:elif="{{!chapters.length}}" class="rd__empty">
+    这本书还没有章节, 请回到上传页或后台抽章
+  </view>
+
+  <view wx:else class="rd__body">
+    <text wx:if="{{currentSummary}}" class="rd__summary">{{ currentSummary }}</text>
+    <text class="rd__content" user-select="{{true}}" space="nbsp" decode>{{ currentContent || '(本章正文为空)' }}</text>
+
+    <view class="rd__nav">
+      <button
+        class="btn-ghost"
+        disabled="{{ !hasPrev }}"
+        bindtap="onPrev"
+      >上一章</button>
+      <button
+        class="btn-primary"
+        bindtap="onMakePaper"
+      >就这章出题</button>
+      <button
+        class="btn-ghost"
+        disabled="{{ !hasNext }}"
+        bindtap="onNext"
+      >下一章</button>
+    </view>
+  </view>
+
+  <view style="height: 100rpx"></view>
+</view>

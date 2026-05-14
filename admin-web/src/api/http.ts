@@ -54,10 +54,19 @@ interface RequestExt {
   _retried?: boolean;
 }
 
+/** 与 backend `main.ts` 的 `setGlobalPrefix('v1')` 对齐; 避免 `.../v1/` 拼成 `/v1//v1` */
+function normalizeApiBase(raw: string | undefined): string {
+  let s = (raw ?? '').trim();
+  if (!s) return '/v1';
+  s = s.replace(/\/+$/, '');
+  if (s.endsWith('/v1')) return s;
+  return `${s}/v1`;
+}
+
 function buildHttp(): AxiosInstance {
-  const baseURL = (import.meta.env.VITE_API_BASE as string | undefined) ?? '';
+  const baseURL = normalizeApiBase(import.meta.env.VITE_API_BASE as string | undefined);
   const http = axios.create({
-    baseURL: baseURL.endsWith('/v1') ? baseURL : `${baseURL || ''}/v1`,
+    baseURL,
     timeout: 30_000,
     headers: { 'Content-Type': 'application/json' },
   });

@@ -1,27 +1,26 @@
 <template>
-  <div class="page">
-    <header class="page-header">
+  <div class="page app-container">
+    <header class="page-hero">
       <div>
-        <h2 class="title">
+        <h2 class="page-hero__title">
           书籍管理
         </h2>
-        <p class="subtitle">
-          共 {{ pagination.total }} 本
+        <p class="page-hero__subtitle">
+          管理平台书库、章节与上下架,共 {{ pagination.total.toLocaleString() }} 本
         </p>
       </div>
-      <el-button
-        type="primary"
-        :icon="Plus"
-        @click="openCreate"
-      >
-        新建书籍
-      </el-button>
+      <div class="page-hero__actions">
+        <el-button
+          type="primary"
+          :icon="Plus"
+          @click="openCreate"
+        >
+          新建书籍
+        </el-button>
+      </div>
     </header>
 
-    <el-card
-      shadow="never"
-      class="filter"
-    >
+    <div class="app-filter">
       <el-form
         inline
         :model="filter"
@@ -32,7 +31,8 @@
             v-model="filter.keyword"
             clearable
             placeholder="书名 / 作者 / ISBN"
-            style="width: 220px"
+            style="width: 240px"
+            :prefix-icon="Search"
           />
         </el-form-item>
         <el-form-item label="状态">
@@ -41,7 +41,7 @@
             style="width: 140px"
           >
             <el-option
-              label="全部"
+              label="全部状态"
               value="all"
             />
             <el-option
@@ -51,6 +51,29 @@
             <el-option
               label="已下架"
               value="0"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="来源">
+          <el-select
+            v-model="filter.source"
+            style="width: 160px"
+          >
+            <el-option
+              label="全部来源"
+              value="all"
+            />
+            <el-option
+              label="管理员录入"
+              value="admin"
+            />
+            <el-option
+              label="用户上传"
+              value="user_upload"
+            />
+            <el-option
+              label="公版"
+              value="public_domain"
             />
           </el-select>
         </el-form-item>
@@ -70,168 +93,238 @@
           </el-button>
         </el-form-item>
       </el-form>
-    </el-card>
+    </div>
 
-    <el-table
-      v-loading="loading"
-      :data="rows"
-      stripe
-      class="table"
-      row-key="id"
-    >
-      <el-table-column
-        type="index"
-        width="56"
-      />
-      <el-table-column
-        prop="title"
-        label="书名"
-        min-width="220"
+    <div class="app-card table-card">
+      <el-table
+        v-loading="loading"
+        :data="rows"
+        stripe
+        row-key="id"
+        :empty-text="loading ? '加载中…' : '暂无数据,点击右上角「新建书籍」开始'"
       >
-        <template #default="{ row }">
-          <span class="book-title">{{ row.title }}</span>
-          <el-tag
-            v-if="row.is_recommended"
-            type="warning"
-            size="small"
-            effect="light"
-            style="margin-left: 6px"
-          >
-            推荐
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="author"
-        label="作者"
-        width="160"
-      />
-      <el-table-column
-        prop="category"
-        label="分类"
-        width="120"
-      />
-      <el-table-column
-        prop="chapters_count"
-        label="章节"
-        width="80"
-        align="center"
-      />
-      <el-table-column
-        label="状态"
-        width="100"
-      >
-        <template #default="{ row }">
-          <el-tag
-            v-if="row.status === 1"
-            type="success"
-            size="small"
-          >
-            已上架
-          </el-tag>
-          <el-tag
-            v-else-if="row.status === 0"
-            type="info"
-            size="small"
-          >
-            已下架
-          </el-tag>
-          <el-tag
-            v-else
-            type="danger"
-            size="small"
-          >
-            已删除
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="updated_at"
-        label="更新时间"
-        width="180"
-      >
-        <template #default="{ row }">
-          {{ format(row.updated_at) }}
-        </template>
-      </el-table-column>
-      <el-table-column
-        label="操作"
-        width="320"
-        fixed="right"
-      >
-        <template #default="{ row }">
-          <el-button
-            text
-            type="primary"
-            size="small"
-            @click="openEdit(row)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            text
-            type="primary"
-            size="small"
-            @click="openChapters(row)"
-          >
-            章节
-          </el-button>
-          <el-button
-            v-if="!row.is_recommended"
-            text
-            type="warning"
-            size="small"
-            @click="setRecommend(row, true)"
-          >
-            推荐
-          </el-button>
-          <el-button
-            v-else
-            text
-            size="small"
-            @click="setRecommend(row, false)"
-          >
-            取消推荐
-          </el-button>
-          <el-button
-            v-if="row.status === 1"
-            text
-            size="small"
-            @click="setStatus(row, 0)"
-          >
-            下架
-          </el-button>
-          <el-button
-            v-else-if="row.status === 0"
-            text
-            type="success"
-            size="small"
-            @click="setStatus(row, 1)"
-          >
-            上架
-          </el-button>
-          <el-button
-            text
-            type="danger"
-            size="small"
-            @click="remove(row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        <el-table-column
+          type="index"
+          label="#"
+          width="56"
+        />
+        <el-table-column
+          prop="title"
+          label="书籍信息"
+          min-width="260"
+        >
+          <template #default="{ row }">
+            <div class="book-cell">
+              <div class="book-cell__cover">
+                <el-image
+                  v-if="row.cover_url"
+                  :src="row.cover_url"
+                  fit="cover"
+                />
+                <span
+                  v-else
+                  class="book-cell__cover-fallback"
+                >
+                  {{ row.title?.[0] ?? 'B' }}
+                </span>
+              </div>
+              <div class="book-cell__body">
+                <div class="book-cell__title">
+                  {{ row.title }}
+                  <el-tag
+                    v-if="row.is_recommended"
+                    type="warning"
+                    size="small"
+                    effect="light"
+                    round
+                  >
+                    推荐
+                  </el-tag>
+                </div>
+                <div class="book-cell__meta">
+                  {{ row.author || '佚名' }}<span
+                    v-if="row.isbn"
+                    class="dot-sep"
+                  >·</span>{{ row.isbn || '' }}
+                </div>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="chapters_count"
+          label="章节"
+          width="80"
+          align="center"
+        >
+          <template #default="{ row }">
+            <span class="chapter-num">{{ row.chapters_count }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="状态"
+          width="100"
+        >
+          <template #default="{ row }">
+            <el-tag
+              v-if="row.status === 1"
+              type="success"
+              size="small"
+              effect="light"
+              round
+            >
+              已上架
+            </el-tag>
+            <el-tag
+              v-else-if="row.status === 0"
+              type="info"
+              size="small"
+              effect="light"
+              round
+            >
+              已下架
+            </el-tag>
+            <el-tag
+              v-else
+              type="danger"
+              size="small"
+              effect="light"
+              round
+            >
+              已删除
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="来源 / 上传者"
+          width="170"
+        >
+          <template #default="{ row }">
+            <div class="source-cell">
+              <el-tag
+                size="small"
+                :type="sourceType(row.source)"
+                effect="plain"
+              >
+                {{ sourceLabel(row.source) }}
+              </el-tag>
+              <span
+                v-if="row.source === 'user_upload' && row.created_by_name"
+                class="text-muted"
+              >
+                {{ row.created_by_name }}
+              </span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="updated_at"
+          label="更新时间"
+          width="170"
+        >
+          <template #default="{ row }">
+            <span class="text-muted">{{ format(row.updated_at) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          width="420"
+          fixed="right"
+        >
+          <template #default="{ row }">
+            <el-button
+              text
+              type="primary"
+              size="small"
+              @click="openPreview(row)"
+            >
+              预览
+            </el-button>
+            <el-button
+              text
+              type="primary"
+              size="small"
+              @click="openEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              text
+              type="primary"
+              size="small"
+              @click="openChapters(row)"
+            >
+              章节
+            </el-button>
+            <el-button
+              text
+              type="primary"
+              size="small"
+              :disabled="!row.pdf_url"
+              :loading="!!pdfImporting[row.id]"
+              :title="row.pdf_url ? '从 PDF 自动抽章节' : '请先在编辑里填 pdf_url'"
+              @click="onImportPdf(row)"
+            >
+              PDF 入章
+            </el-button>
+            <el-button
+              v-if="!row.is_recommended"
+              text
+              type="warning"
+              size="small"
+              @click="setRecommend(row, true)"
+            >
+              推荐
+            </el-button>
+            <el-button
+              v-else
+              text
+              size="small"
+              @click="setRecommend(row, false)"
+            >
+              取消推荐
+            </el-button>
+            <el-button
+              v-if="row.status === 1"
+              text
+              size="small"
+              @click="setStatus(row, 0)"
+            >
+              下架
+            </el-button>
+            <el-button
+              v-else-if="row.status === 0"
+              text
+              type="success"
+              size="small"
+              @click="setStatus(row, 1)"
+            >
+              上架
+            </el-button>
+            <el-button
+              text
+              type="danger"
+              size="small"
+              @click="remove(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      class="pagination"
-      :current-page="pagination.page"
-      :page-size="pagination.page_size"
-      :total="pagination.total"
-      layout="total, prev, pager, next, jumper"
-      :page-sizes="[10, 20, 50]"
-      @current-change="handlePage"
-      @size-change="handleSize"
-    />
+      <div class="pagination-wrap">
+        <el-pagination
+          :current-page="pagination.page"
+          :page-size="pagination.page_size"
+          :total="pagination.total"
+          layout="total, prev, pager, next, jumper"
+          :page-sizes="[10, 20, 50]"
+          @current-change="handlePage"
+          @size-change="handleSize"
+        />
+      </div>
+    </div>
 
     <BookEditDialog
       v-model="editVisible"
@@ -242,6 +335,10 @@
       v-model="chapterVisible"
       :book="chapterTarget"
       @saved="loadList()"
+    />
+    <BookPreviewDrawer
+      v-model="previewVisible"
+      :book-id="previewBookId"
     />
   </div>
 </template>
@@ -256,17 +353,27 @@ import { bookApi } from '@/api/admin';
 import type { AdminBookView } from '@/types/api';
 
 import BookEditDialog from './_BookEditDialog.vue';
+import BookPreviewDrawer from './_BookPreviewDrawer.vue';
 import ChapterImportDialog from './_ChapterImportDialog.vue';
 
 const loading = ref(false);
 const rows = ref<AdminBookView[]>([]);
 const pagination = reactive({ page: 1, page_size: 20, total: 0 });
-const filter = reactive({ keyword: '', status: 'all' as '1' | '0' | '-1' | 'all' });
+const filter = reactive({
+  keyword: '',
+  status: 'all' as '1' | '0' | '-1' | 'all',
+  source: 'all' as 'admin' | 'user_upload' | 'public_domain' | 'all',
+});
 
 const editVisible = ref(false);
 const editing = ref<AdminBookView | null>(null);
 const chapterVisible = ref(false);
 const chapterTarget = ref<AdminBookView | null>(null);
+
+const previewVisible = ref(false);
+const previewBookId = ref<string | null>(null);
+
+const pdfImporting = reactive<Record<string, boolean>>({});
 
 async function loadList(): Promise<void> {
   loading.value = true;
@@ -274,6 +381,7 @@ async function loadList(): Promise<void> {
     const res = await bookApi.list({
       keyword: filter.keyword.trim() || undefined,
       status: filter.status,
+      source: filter.source,
       page: pagination.page,
       page_size: pagination.page_size,
     });
@@ -292,6 +400,7 @@ function search(): void {
 function reset(): void {
   filter.keyword = '';
   filter.status = 'all';
+  filter.source = 'all';
   pagination.page = 1;
   void loadList();
 }
@@ -322,6 +431,11 @@ function openChapters(row: AdminBookView): void {
   chapterVisible.value = true;
 }
 
+function openPreview(row: AdminBookView): void {
+  previewBookId.value = row.id;
+  previewVisible.value = true;
+}
+
 async function setRecommend(row: AdminBookView, on: boolean): Promise<void> {
   if (on) await bookApi.recommend(row.id);
   else await bookApi.unrecommend(row.id);
@@ -334,6 +448,35 @@ async function setStatus(row: AdminBookView, status: 1 | 0): Promise<void> {
   else await bookApi.offline(row.id);
   ElMessage.success(status === 1 ? '已上架' : '已下架');
   void loadList();
+}
+
+async function onImportPdf(row: AdminBookView): Promise<void> {
+  if (!row.pdf_url) {
+    ElMessage.warning('该书未填 pdf_url, 请先在「编辑」中填入 PDF 链接');
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      `要从 PDF 自动抽取章节并替换《${row.title}》当前章节吗?\n` +
+        '步骤:1) 服务端 pdfplumber 抽文字  2) LLM 切章  3) 整体替换原章节(不可恢复)',
+      'PDF 自动入章',
+      { type: 'warning', confirmButtonText: '开始抽取', cancelButtonText: '取消' },
+    );
+  } catch {
+    return;
+  }
+  pdfImporting[row.id] = true;
+  try {
+    const r = await bookApi.importPdf(row.id);
+    ElMessage.success(
+      `已抽取 ${r.imported} 章(共 ${r.pages} 页 · 启发标题 ${r.chapter_hints} 个)`,
+    );
+    void loadList();
+  } catch (err) {
+    ElMessage.error((err as Error).message || 'PDF 抽取失败');
+  } finally {
+    pdfImporting[row.id] = false;
+  }
 }
 
 async function remove(row: AdminBookView): Promise<void> {
@@ -360,44 +503,115 @@ function format(ts: string): string {
   return dayjs(ts).format('YYYY-MM-DD HH:mm');
 }
 
-onMounted(loadList);
+function sourceLabel(s: AdminBookView['source']): string {
+  if (s === 'user_upload') return '用户上传';
+  if (s === 'public_domain') return '公版';
+  return '管理员';
+}
+
+function sourceType(s: AdminBookView['source']): 'primary' | 'success' | 'info' {
+  if (s === 'user_upload') return 'primary';
+  if (s === 'public_domain') return 'success';
+  return 'info';
+}
+
+onMounted(() => {
+  void loadList();
+});
 </script>
 
 <style scoped lang="scss">
-.page {
-  max-width: 1400px;
-  margin: 0 auto;
+.table-card {
+  padding: 0;
+  overflow: hidden;
 }
-.page-header {
+
+.book-cell {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 12px;
+  padding: 4px 0;
 }
-.title {
-  font-size: 22px;
+
+.book-cell__cover {
+  width: 40px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg-soft);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-soft);
+
+  :deep(.el-image) {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.book-cell__cover-fallback {
+  font-size: 18px;
   font-weight: 600;
-  margin: 0;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.subtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #8c8c8c;
+
+.book-cell__body {
+  min-width: 0;
 }
-.filter {
-  margin-bottom: 16px;
-  border: none;
+
+.book-cell__title {
+  font-weight: 600;
+  color: var(--color-text-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
-.table {
-  background: #fff;
-  border-radius: 8px;
+
+.book-cell__meta {
+  font-size: 12.5px;
+  color: var(--color-text-3);
+  margin-top: 2px;
 }
-.book-title {
-  font-weight: 500;
+
+.dot-sep {
+  margin: 0 6px;
+  color: var(--color-text-4);
 }
-.pagination {
-  margin-top: 16px;
+
+.chapter-num {
+  font-weight: 600;
+  color: var(--color-text-1);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  background: var(--color-bg-soft);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.pagination-wrap {
+  padding: 12px 20px;
   display: flex;
   justify-content: flex-end;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.source-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.text-muted {
+  color: var(--color-text-3);
+  font-size: 12px;
 }
 </style>

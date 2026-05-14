@@ -1,13 +1,23 @@
 <view class="book-card" hover-class="book-card--hover" hover-stay-time="80" bindtap="onTap">
-  <image
-    class="book-card__cover"
-    src="{{book.cover_url || '/assets/cover-placeholder.png'}}"
-    mode="aspectFill"
-    lazy-load="{{true}}"
-  />
+  <view class="book-card__cover-wrap">
+    <view class="book-title-cover book-title-cover--sm {{ coverToneClass }}">
+      <text class="book-title-cover__title">{{ book.title }}</text>
+    </view>
+    <view
+      wx:if="{{showFavorite}}"
+      class="book-card__fav {{ book.is_favorited ? 'book-card__fav--active' : '' }} {{ favBusy ? 'book-card__fav--busy' : '' }}"
+      catchtap="onFavoriteTap"
+      hover-class="book-card__fav--hover"
+      hover-stay-time="60"
+      aria-label="{{ book.is_favorited ? '取消收藏' : '收藏' }}"
+    >
+      <view wx:if="{{!favBusy}}" class="book-card__fav-star"></view>
+      <view wx:else class="book-card__fav-spin"></view>
+    </view>
+  </view>
   <view class="book-card__body">
     <text class="book-card__title ellipsis-2">{{book.title}}</text>
-    <text class="book-card__meta">{{book.author}}{{book.category ? ' · ' + book.category : ''}}</text>
+    <text class="book-card__meta">{{book.author || '匿名'}}</text>
     <view class="book-card__tags" wx:if="{{tagList.length}}">
       <view wx:for="{{tagList}}" wx:key="*this" class="book-card__tag">
         {{item}}

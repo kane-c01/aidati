@@ -53,7 +53,10 @@ export class AdminConfigService {
       action: 'config.update',
       targetType: 'system_config',
       targetId: null,
-      meta: { key: keyName, value: dto.value as Prisma.InputJsonValue },
+      meta:
+        keyName.includes('api_key') || keyName.includes('_secret')
+          ? { key: keyName, value: '[redacted]' }
+          : { key: keyName, value: dto.value as Prisma.InputJsonValue },
     });
     return {
       key: updated.keyName,

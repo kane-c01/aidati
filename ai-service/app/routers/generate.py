@@ -6,8 +6,9 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.auth import require_internal_token
+from app.adapters.factory import LLMChain, build_chain_from_runtime
 from app.models import GeneratePaperRequest, GeneratePaperResponse
-from app.services.llm_client import LLMClient, get_llm_client
+from app.services.llm_client import LLMClient
 
 logger = structlog.get_logger()
 
@@ -25,7 +26,6 @@ router = APIRouter(
 )
 async def generate_paper(
     body: GeneratePaperRequest,
-    client: LLMClient = Depends(get_llm_client),
 ) -> GeneratePaperResponse:
     logger.info(
         "generate.start",
@@ -35,6 +35,8 @@ async def generate_paper(
         count=body.config.count,
         types=body.config.question_types,
     )
+    chain_list = build_chain_from_runtime(body.llm_runtime)
+    client = LLMClient(LLMChain(chain_list))
     try:
         questions, usage = await client.generate_questions(
             paper_id=body.paper_id,

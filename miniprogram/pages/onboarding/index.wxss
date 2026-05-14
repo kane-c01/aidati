@@ -31,10 +31,274 @@
   gap: var(--space-md);
 }
 
-.onb__emoji {
-  font-size: 200rpx;
-  line-height: 1;
+/* ======================================================================
+ * 通用插画区(三屏共用)
+ * ====================================================================== */
+
+.onb__illus {
+  position: relative;
+  width: 100%;
+  height: 480rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
 }
+
+/* ======================================================================
+ * 屏 1: 拍照(手机 + 取景框 + 火花)
+ * ====================================================================== */
+
+.onb__illus--camera {
+  /* 默认布局即可 */
+}
+
+.onb__illus-phone {
+  position: relative;
+  width: 280rpx;
+  height: 380rpx;
+  background-color: #fff;
+  border: 4rpx solid var(--color-text-primary);
+  border-radius: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 40rpx rgba(20, 20, 20, 0.06);
+}
+
+.onb__illus-phone::before {
+  content: '';
+  position: absolute;
+  top: 16rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 8rpx;
+  background-color: var(--color-text-primary);
+  border-radius: 999rpx;
+}
+
+.onb__illus-screen {
+  width: 224rpx;
+  height: 304rpx;
+  border-radius: 18rpx;
+  background-color: var(--color-primary-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onb__illus-frame {
+  width: 168rpx;
+  height: 224rpx;
+  border: 4rpx dashed var(--color-primary);
+  border-radius: 12rpx;
+}
+
+.onb__illus-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.onb__illus-spark {
+  position: absolute;
+  width: 28rpx;
+  height: 28rpx;
+  background-color: var(--color-warning);
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+.onb__illus-spark--1 {
+  top: 36rpx;
+  left: 90rpx;
+  width: 32rpx;
+  height: 32rpx;
+}
+.onb__illus-spark--2 {
+  top: 80rpx;
+  right: 80rpx;
+  background-color: var(--color-primary);
+  opacity: 0.7;
+}
+.onb__illus-spark--3 {
+  bottom: 60rpx;
+  right: 110rpx;
+  width: 22rpx;
+  height: 22rpx;
+  background-color: var(--color-success);
+}
+
+/* ======================================================================
+ * 屏 2: 书架
+ * ====================================================================== */
+
+.onb__illus--library {
+  flex-direction: column;
+}
+
+.onb__illus-shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 14rpx;
+  height: 280rpx;
+  padding: 0 16rpx;
+}
+
+.onb__illus-book {
+  width: 56rpx;
+  border-radius: 6rpx 6rpx 0 0;
+  position: relative;
+  box-shadow: 0 4rpx 8rpx rgba(20, 20, 20, 0.06);
+}
+.onb__illus-book::after {
+  content: '';
+  position: absolute;
+  top: 24rpx;
+  left: 8rpx;
+  right: 8rpx;
+  height: 2rpx;
+  background-color: rgba(255, 255, 255, 0.55);
+  border-radius: 1rpx;
+}
+
+.onb__illus-book--tall {
+  height: 240rpx;
+}
+.onb__illus-book--mid {
+  height: 200rpx;
+}
+.onb__illus-book--short {
+  height: 160rpx;
+}
+
+.onb__illus-shelf-base {
+  width: 360rpx;
+  height: 6rpx;
+  background-color: var(--color-text-primary);
+  border-radius: 999rpx;
+  margin-top: 4rpx;
+}
+
+.onb__illus-badge {
+  position: absolute;
+  top: 30rpx;
+  right: 80rpx;
+  background-color: var(--color-primary);
+  color: #fff;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 0.5rpx;
+  box-shadow: 0 6rpx 16rpx rgba(91, 91, 214, 0.32);
+}
+
+/* ======================================================================
+ * 屏 3: 批改结果(分数环 + 标签)
+ * ====================================================================== */
+
+.onb__illus--result {
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.onb__illus-circle {
+  position: relative;
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 50%;
+  background-image:
+    conic-gradient(var(--color-primary) 0deg 306deg, var(--color-border-light) 306deg 360deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onb__illus-circle::before {
+  content: '';
+  position: absolute;
+  inset: 14rpx;
+  border-radius: 50%;
+  background-color: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.onb__illus-score {
+  position: relative;
+  z-index: 1;
+  font-size: 96rpx;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  line-height: 1;
+  letter-spacing: -2rpx;
+}
+
+.onb__illus-score-sub {
+  position: relative;
+  z-index: 1;
+  font-size: 26rpx;
+  color: var(--color-text-tertiary);
+  margin-top: 6rpx;
+  letter-spacing: 1rpx;
+}
+
+.onb__illus-tags {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.onb__illus-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: var(--font-caption);
+  font-weight: 500;
+  letter-spacing: 0.5rpx;
+}
+
+.onb__illus-tag--right {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+.onb__illus-tag--right::before {
+  content: '';
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background-color: var(--color-success);
+}
+
+.onb__illus-tag--wrong {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+.onb__illus-tag--wrong::before {
+  content: '';
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background-color: var(--color-danger);
+}
+
+/* ======================================================================
+ * 文案
+ * ====================================================================== */
 
 .onb__title {
   font-size: var(--font-h1);
@@ -42,6 +306,7 @@
   color: var(--color-text-primary);
   text-align: center;
   margin-top: var(--space-lg);
+  letter-spacing: 0.5rpx;
 }
 
 .onb__desc {
@@ -51,6 +316,10 @@
   line-height: 1.6;
   max-width: 600rpx;
 }
+
+/* ======================================================================
+ * Dots / 操作
+ * ====================================================================== */
 
 .onb__dots {
   display: flex;
@@ -76,4 +345,9 @@
 .onb__action {
   padding: var(--space-lg) var(--space-xl);
   padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
+}
+
+.onb__btn-next {
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
 }

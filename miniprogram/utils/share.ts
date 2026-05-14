@@ -26,14 +26,14 @@ export function buildPaperShare(opts: {
 
 export function buildBookShare(opts: { bookId: string; title: string }): ShareConfig {
   return {
-    title: `${opts.title} - AI 出题学习`,
+    title: `${opts.title} - 考题魔盒`,
     path: `/pages/book-detail/index?bookId=${encodeURIComponent(opts.bookId)}&from=share`,
   };
 }
 
 export function defaultShare(): ShareConfig {
   return {
-    title: 'AI 智能出题学习 - 让 AI 帮你出一套题',
+    title: '考题魔盒 · 让 AI 帮你出一套题',
     path: '/pages/home/index?from=share',
   };
 }

@@ -2,11 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModerationScene, type User, UserRole } from '@prisma/client';
 
-import {
-  BusinessException,
-  NotFoundBusinessException,
-} from '../../common/exceptions/business.exception';
-import { ERROR_CODES } from '../../common/constants/error-codes';
+import { NotFoundBusinessException } from '../../common/exceptions/business.exception';
 import { maskOpenid } from '../../common/utils/mask';
 import { nextShanghaiMidnightUtc, todayInShanghaiAsDate } from '../../common/utils/timezone';
 import { PrismaService } from '../../infra/prisma/prisma.service';
@@ -20,8 +16,6 @@ export interface UserBrief {
   nickname: string | null;
   avatar_url: string | null;
   role: UserRole;
-  is_minor: number;
-  minor_mode_enabled: number;
 }
 
 export interface UserStats {
@@ -86,25 +80,15 @@ export class UserService {
 
   /**
    * PATCH /user/me — 更新个人资料
-   * 关键约束:is_minor=1 一旦设置不可改回 0(PRD §7.5.2)
    */
   async updateMe(userId: bigint, dto: UpdateProfileDto): Promise<UserBrief> {
     const user = await this.findUserOrThrow(userId);
-
-    if (dto.is_minor === 0 && user.isMinor === 1) {
-      throw new BusinessException(
-        ERROR_CODES.PARAM_INVALID,
-        '未成年标识一旦开启不可自助关闭, 请联系客服',
-      );
-    }
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         nickname: dto.nickname ?? user.nickname,
         avatarUrl: dto.avatar_url ?? user.avatarUrl,
-        isMinor: dto.is_minor ?? user.isMinor,
-        minorModeEnabled: dto.minor_mode_enabled ?? user.minorModeEnabled,
       },
     });
 
@@ -201,8 +185,6 @@ export class UserService {
       nickname: user.nickname,
       avatar_url: user.avatarUrl,
       role: user.role,
-      is_minor: user.isMinor,
-      minor_mode_enabled: user.minorModeEnabled,
     };
   }
 

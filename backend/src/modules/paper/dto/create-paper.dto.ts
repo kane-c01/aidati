@@ -75,6 +75,20 @@ export class CreatePaperDto {
   @Matches(/^\d+$/, { message: 'photo_set_id 必须是数字字符串' })
   photo_set_id?: string;
 
+  /**
+   * photo_set 模式可选: 仅以列出的 photo_id 计入出题文本
+   * - 缺省/空: 走原逻辑(全用 photo_set.ocrText)
+   * - 非空: 后端按 id 过滤 photos 后按 order_no 重新拼接
+   * 上限 20(单次拍照集最多 20 页)
+   */
+  @ValidateIf((o: CreatePaperDto) => o.source_type === 'photo_set')
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @Matches(/^\d+$/, { each: true, message: 'selected_photo_ids 元素必须是数字字符串' })
+  selected_photo_ids?: string[];
+
   @ValidateNested()
   @Type(() => GenerateConfigDto)
   config!: GenerateConfigDto;

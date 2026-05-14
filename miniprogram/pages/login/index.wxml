@@ -10,7 +10,7 @@
         <view class="login__logo-badge">AI</view>
       </view>
     </view>
-    <text class="login__title">AI 智能出题</text>
+    <text class="login__title">考题魔盒</text>
     <text class="login__subtitle">拍书页 · AI 出题 · 自动批改</text>
     <!-- 三个特性描述 -->
     <view class="login__features">

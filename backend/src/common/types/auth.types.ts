@@ -8,8 +8,8 @@ export type UserRoleName = 'user' | 'admin' | 'super_admin';
 export interface JwtPayload {
   /** 用户 id (BigInt 字符串化) */
   sub: string;
-  /** 微信 openid (脱敏后) */
-  openid: string;
+  /** 微信 openid (脱敏后);后台账号登录可能为 null */
+  openid: string | null;
   /** 角色 */
   role: UserRoleName;
   /** Token JTI (用于撤销) */

@@ -17,6 +17,7 @@ import { StorageModule } from './infra/storage/storage.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookModule } from './modules/book/book.module';
+import { FavoriteModule } from './modules/favorite/favorite.module';
 import { MistakeModule } from './modules/mistake/mistake.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { PaperModule } from './modules/paper/paper.module';
@@ -53,6 +54,7 @@ import { UserModule } from './modules/user/user.module';
     UserModule,
     UploadModule,
     PhotoModule,
+    FavoriteModule,
     BookModule,
     MistakeModule,
     PaperModule,

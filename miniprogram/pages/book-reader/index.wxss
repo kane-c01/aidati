@@ -1,0 +1,127 @@
+.rd {
+  min-height: 100vh;
+  background: var(--color-bg-page);
+  padding: var(--space-md) var(--space-lg) 200rpx;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.rd__head {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  box-shadow: var(--shadow-card);
+}
+
+.rd__title-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.rd__book-title {
+  font-size: var(--font-h3);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rd__chapters-toggle {
+  color: var(--color-primary);
+  font-size: var(--font-caption);
+  flex-shrink: 0;
+}
+.rd__chapter-title {
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-top: 4rpx;
+}
+
+.rd__toc {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) 0;
+  box-shadow: var(--shadow-card);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.rd__toc-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx var(--space-md);
+  font-size: var(--font-caption);
+  color: var(--color-text-primary);
+}
+.rd__toc-row--active {
+  background: var(--color-primary-soft, rgba(91, 91, 214, 0.1));
+  color: var(--color-primary);
+  font-weight: 500;
+}
+.rd__toc-no {
+  width: 40rpx;
+  color: var(--color-text-tertiary);
+}
+.rd__toc-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd__loading,
+.rd__empty {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 80rpx var(--space-md);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+}
+
+.rd__body {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-md) var(--space-md);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.rd__summary {
+  display: block;
+  background: rgba(91, 91, 214, 0.07);
+  border-left: 6rpx solid var(--color-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.rd__content {
+  display: block;
+  font-size: 30rpx;
+  color: var(--color-text-primary);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rd__nav {
+  display: flex;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1rpx solid var(--color-border-light);
+}
+.rd__nav button {
+  flex: 1;
+}

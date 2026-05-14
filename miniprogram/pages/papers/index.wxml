@@ -1,0 +1,116 @@
+<view class="hist">
+  <view class="hist__head">
+    <text class="hist__title">历史试卷</text>
+    <text class="hist__sub" wx:if="{{!loading}}">{{ total }} 套</text>
+  </view>
+
+  <view class="hist__filter">
+    <segmented
+      options="{{filterOptions}}"
+      value="{{statusFilter}}"
+      bind:change="onFilterChange"
+    />
+  </view>
+
+  <view class="hist__sub-filter" wx:if="{{ bookOptions.length > 0 }}">
+    <view
+      class="hist__sub-chip {{ bookFilter ? 'hist__sub-chip--active' : '' }}"
+      hover-class="hist__sub-chip--hover"
+      hover-stay-time="80"
+      bindtap="onPickBook"
+    >
+      <text class="hist__sub-chip-label">{{ bookChipText }}</text>
+      <view class="hist__sub-chip-arrow"></view>
+    </view>
+
+    <view
+      wx:if="{{ bookFilter && currentChapterOptions.length > 0 }}"
+      class="hist__sub-chip {{ chapterFilter ? 'hist__sub-chip--active' : '' }}"
+      hover-class="hist__sub-chip--hover"
+      hover-stay-time="80"
+      bindtap="onPickChapter"
+    >
+      <text class="hist__sub-chip-label">{{ chapterChipText }}</text>
+      <view class="hist__sub-chip-arrow"></view>
+    </view>
+
+    <view
+      wx:if="{{ bookFilter || chapterFilter }}"
+      class="hist__sub-clear"
+      bindtap="onClearFilters"
+    >清除</view>
+  </view>
+
+  <view wx:if="{{loading && !items.length}}" class="hist__loading">
+    <skeleton-list count="4" />
+  </view>
+
+  <empty-state
+    wx:elif="{{!loading && !items.length}}"
+    title="{{ statusFilter === 'all' ? '还没有出过试卷' : '没有符合的试卷' }}"
+    description="去拍照或在书库选本书 AI 帮你出一套"
+    actionText="去出题"
+    bind:action="onGotoPhoto"
+  />
+
+  <view wx:else class="hist__list">
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="hist__row"
+      hover-class="hist__row--hover"
+      hover-stay-time="80"
+      data-id="{{item.id}}"
+      data-status="{{item.status}}"
+      bindtap="onPaperTap"
+    >
+      <view class="hist__row-head">
+        <view class="hist__row-meta">
+          <view class="hist__chip {{ statusToneMap[item.status] }}">{{ statusLabelMap[item.status] }}</view>
+          <text class="hist__src">{{ item.sourceLabel }}</text>
+        </view>
+        <text class="hist__time">{{ item.dateLabel }}</text>
+      </view>
+
+      <text class="hist__row-title ellipsis-1">{{ item.title }}</text>
+      <text wx:if="{{item.subtitle}}" class="hist__row-sub ellipsis-1">{{ item.subtitle }}</text>
+
+      <view class="hist__row-stats">
+        <view class="hist__stat" wx:if="{{item.status === 'graded'}}">
+          <text class="hist__stat-label">得分</text>
+          <view class="hist__stat-value">
+            <text class="hist__stat-num">{{ item.scoreNum }}</text>
+            <text class="hist__stat-unit">/ {{ item.scoreMax }}</text>
+          </view>
+        </view>
+        <view class="hist__stat" wx:if="{{item.status === 'graded'}}">
+          <text class="hist__stat-label">正确率</text>
+          <view class="hist__stat-value">
+            <text class="hist__stat-num">{{ item.accuracyMain }}</text>
+            <text class="hist__stat-unit">{{ item.accuracyUnit }}</text>
+          </view>
+        </view>
+        <view class="hist__stat">
+          <text class="hist__stat-label">题目</text>
+          <view class="hist__stat-value">
+            <text class="hist__stat-num">{{ item.total_questions }}</text>
+            <text class="hist__stat-unit">题</text>
+          </view>
+        </view>
+        <view class="hist__stat" wx:if="{{item.timeLabel}}">
+          <text class="hist__stat-label">用时</text>
+          <view class="hist__stat-value">
+            <text class="hist__stat-num">{{ item.timeLabel }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="hist__loadmore" wx:if="{{items.length}}">
+    <text wx:if="{{loading}}">加载中…</text>
+    <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+  </view>
+
+  <view class="hist__spacer"></view>
+</view>

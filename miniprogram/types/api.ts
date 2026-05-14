@@ -91,8 +91,6 @@ export interface MeResponse {
 export interface UpdateProfileRequest {
   nickname?: string;
   avatar_url?: string;
-  is_minor?: 0 | 1;
-  minor_mode_enabled?: 0 | 1;
 }
 
 export interface PrivacyStatusResponse {
@@ -112,7 +110,6 @@ export interface FeedbackRequest {
 
 export interface BookListQuery {
   keyword?: string;
-  category?: string;
   page?: number;
   page_size?: number;
   sort?: 'recommended' | 'latest' | 'hot';
@@ -152,9 +149,12 @@ export interface ReorderPhotosRequest {
 
 export interface StartOcrRequest {
   /**
-   * 'wechat': 客户端用 wx.ocr 识别后写回; 'mock': 后端固定占位; 'tencent': 后端调腾讯云
+   * 'vision': 服务端 VL 大模型自动识别(推荐)
+   * 'wechat': 客户端 wx.ocr 识别后写回
+   * 'mock': 后端固定占位(调试)
+   * 'tencent': 腾讯云 OCR(未实现)
    */
-  mode?: 'wechat' | 'mock' | 'tencent';
+  mode?: 'vision' | 'wechat' | 'mock' | 'tencent';
 }
 
 export interface StartOcrResponse {
@@ -175,6 +175,8 @@ export interface CreatePaperRequest {
   book_id?: string;
   chapter_ids?: string[];
   photo_set_id?: string;
+  /** photo_set 模式可选: 仅以列出的 photo_id 计入出题文本(undefined/缺省 = 全用) */
+  selected_photo_ids?: string[];
   config: GenerateConfig;
 }
 
@@ -204,6 +206,72 @@ export interface SubmitAnswersResponse {
 }
 
 export type PaperResultResponse = PaperResult;
+
+// ===== 收藏 =====
+
+export interface FavoriteListQuery {
+  page?: number;
+  page_size?: number;
+}
+
+export interface FavoriteItem {
+  id: string;
+  book_id: string;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
+  description: string | null;
+  tags: unknown;
+  is_recommended: boolean;
+  is_favorited: true;
+  created_at: string;
+}
+
+export type FavoriteListResponse = PaginatedData<FavoriteItem>;
+
+export interface AddFavoriteRequest {
+  book_id: string;
+}
+
+export interface AddFavoriteResponse {
+  id: string;
+  favorited: true;
+}
+
+// ===== 历史试卷 =====
+
+export type PaperHistoryStatus = 'all' | 'ready' | 'submitted' | 'graded';
+
+export interface PaperHistoryQuery {
+  status?: PaperHistoryStatus;
+  book_id?: string;
+  chapter_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaperHistoryItem {
+  id: string;
+  status: PaperStatus;
+  source_type: PaperSourceType;
+  total_questions: number;
+  created_at: string;
+
+  book_id: string | null;
+  book_title: string | null;
+  chapter_id: string | null;
+  chapter_title: string | null;
+  photo_set_id: string | null;
+  photo_set_name: string | null;
+
+  total_score: number | null;
+  max_score: number | null;
+  accuracy: number | null;
+  time_spent_sec: number | null;
+  answered_count: number;
+}
+
+export type PaperHistoryResponse = PaginatedData<PaperHistoryItem>;
 
 // ===== 错题本 =====
 

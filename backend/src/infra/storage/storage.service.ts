@@ -2,10 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import type { Readable } from 'node:stream';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as mimeTypes from 'mime-types';
 import { nanoid } from 'nanoid';
@@ -191,6 +193,28 @@ export class StorageService {
     const base = this.publicBase.replace(/\/$/, '');
     if (!url.startsWith(base + '/')) return null;
     return url.slice(base.length + 1);
+  }
+
+  /**
+   * GET 对象原始字节(内网 / 同 VPC, 通常零延迟)
+   *
+   * 用途:OCR 直送链路里, backend 从 OSS 把图拉到内存 → base64 → ai-service → DashScope,
+   * 完全绕过 DashScope 远程 fetch OSS 可能失败 / 慢的问题(本地 minio 场景命中率极高)。
+   */
+  async fetchObject(key: string): Promise<{ body: Buffer; contentType: string }> {
+    const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    const stream = res.Body as Readable | undefined;
+    if (!stream || typeof stream[Symbol.asyncIterator] !== 'function') {
+      throw new Error(`S3 GetObject 没有返回可读流: key=${key}`);
+    }
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream as AsyncIterable<Buffer | Uint8Array>) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return {
+      body: Buffer.concat(chunks),
+      contentType: res.ContentType ?? 'application/octet-stream',
+    };
   }
 
   /**

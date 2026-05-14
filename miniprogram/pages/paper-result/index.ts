@@ -71,7 +71,7 @@ Page<PageData, PageMethods>({
   },
 
   onShareAppMessage() {
-    if (!this.data.result) return { title: 'AI 智能出题学习', path: '/pages/home/index' };
+    if (!this.data.result) return { title: '考题魔盒', path: '/pages/home/index' };
     return buildPaperShare({
       paperId: this.data.paperId,
       bookTitle: paperStore.currentPaper?.book_id ? '试卷' : null,

@@ -1,0 +1,82 @@
+<view class="lib">
+  <view class="lib__hero">
+    <view class="lib__hero-title">我的书库</view>
+    <view class="lib__hero-sub">
+      {{ totalLabel }} · 在「拍照」里选 PDF, 校对后可一键存为书
+    </view>
+  </view>
+
+  <view wx:if="{{ loading && !books.length }}" class="lib__skeleton">
+    <view class="lib__skeleton-card" wx:for="{{[1,2,3]}}" wx:key="*this"></view>
+  </view>
+
+  <view wx:elif="{{ !books.length }}" class="lib__empty">
+    <text class="lib__empty-title">还没上传过书</text>
+    <text class="lib__empty-desc">
+      请去「拍照」页, 点「从文件导入」选一份 PDF;
+      AI 会按页拆分, 校对后再点「保存为书」即可入库
+    </text>
+    <view
+      class="lib__empty-cta"
+      hover-class="lib__empty-cta--hover"
+      hover-stay-time="80"
+      bindtap="onGoCapture"
+    >
+      <text class="lib__empty-cta-text">去拍照导入 PDF</text>
+      <view class="lib__empty-cta-arrow"></view>
+    </view>
+  </view>
+
+  <view wx:else class="lib__list">
+    <view
+      wx:for="{{books}}"
+      wx:key="id"
+      class="lib__card"
+      bindtap="onOpenBook"
+      data-id="{{item.id}}"
+    >
+      <view class="lib__cover book-title-cover book-title-cover--md book-title-cover--tone-{{ item._tone }}">
+        <text class="book-title-cover__title">{{ item.title }}</text>
+      </view>
+
+      <view class="lib__info">
+        <view class="lib__title">{{ item.title }}</view>
+        <view wx:if="{{item.author}}" class="lib__author">{{ item.author }}</view>
+
+        <view wx:if="{{ item._isProcessing }}" class="lib__progress">
+          <view class="lib__progress-text">{{ item._statusLabel }}</view>
+          <view class="lib__progress-bar">
+            <view class="lib__progress-fill" style="width: {{ item._progress }}%"></view>
+          </view>
+        </view>
+
+        <view wx:elif="{{ item._isFailed }}" class="lib__failed">
+          <text class="lib__failed-tag">AI 整理失败</text>
+          <text wx:if="{{item.import_error}}" class="lib__failed-msg">{{ item.import_error }}</text>
+        </view>
+
+        <view wx:else class="lib__meta">
+          <text class="lib__meta-tag">{{ item.chapters_count || 0 }} 章</text>
+          <text wx:if="{{item.is_recommended}}" class="lib__meta-tag lib__meta-tag--gold">已被推荐到主页</text>
+        </view>
+      </view>
+
+      <view class="lib__actions">
+        <view
+          class="lib__btn {{ item._actionsDisabled ? 'lib__btn--disabled' : '' }}"
+          catchtap="onRead"
+          data-id="{{item.id}}"
+        >阅读</view>
+        <view
+          class="lib__btn lib__btn--primary {{ item._actionsDisabled ? 'lib__btn--disabled' : '' }}"
+          catchtap="onMakePaper"
+          data-id="{{item.id}}"
+        >出题</view>
+        <view class="lib__btn lib__btn--ghost" catchtap="onMore" data-id="{{item.id}}">⋯</view>
+      </view>
+    </view>
+  </view>
+
+  <ai-disclaimer wx:if="{{books.length}}" variant="block" />
+  <view style="height: 200rpx"></view>
+</view>

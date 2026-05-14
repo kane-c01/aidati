@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "框选识别区域",
+  "usingComponents": {
+    "ai-disclaimer": "/components/ai-disclaimer/index"
+  }
+}

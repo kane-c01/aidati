@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 
 import { AiService } from './ai-service.service';
+import { LlmRuntimeService } from './llm-runtime.service';
+import { VisionRuntimeService } from './vision-runtime.service';
 
 /**
  * AI 编排服务客户端模块
@@ -10,7 +12,7 @@ import { AiService } from './ai-service.service';
  */
 @Global()
 @Module({
-  providers: [AiService],
-  exports: [AiService],
+  providers: [AiService, LlmRuntimeService, VisionRuntimeService],
+  exports: [AiService, LlmRuntimeService, VisionRuntimeService],
 })
 export class AiServiceModule {}

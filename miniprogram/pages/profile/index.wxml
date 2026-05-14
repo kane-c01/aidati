@@ -1,81 +1,210 @@
 <view class="pf">
-  <view class="pf__head">
-    <view class="pf__settings" bindtap="onSettings">⚙</view>
+  <!-- 顶栏 -->
+  <view class="pf__top">
+    <text class="pf__top-title">我的</text>
+  </view>
+
+  <!-- 用户区:中轴头像 + 名 + 等级 -->
+  <view wx:if="{{userStore.isLoggedIn}}" class="pf__user">
+    <view class="pf__avatar">
+      <image
+        wx:if="{{userStore.user.avatar_url}}"
+        class="pf__avatar-img"
+        src="{{userStore.user.avatar_url}}"
+        mode="aspectFill"
+      />
+      <text wx:else class="pf__avatar-letter">{{ avatarInitial }}</text>
+    </view>
+    <text class="pf__name">{{ userStore.user.nickname || '微信用户' }}</text>
+    <view class="pf__chips">
+      <view class="pf__chip">Lv.{{ levelNum }} · {{ levelTitle }}</view>
+    </view>
+    <view class="pf__lvl">
+      <view class="pf__lvl-info">
+        <text class="pf__lvl-text">{{ levelHint }}</text>
+        <text class="pf__lvl-num">{{ levelProgressLabel }}</text>
+      </view>
+      <view class="pf__lvl-track">
+        <view class="pf__lvl-fill" style="width: {{ levelPercent }}%"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 未登录态 -->
+  <view wx:else class="pf__guest">
+    <view class="pf__avatar pf__avatar--guest">
+      <view class="pf__avatar-guest-ico">
+        <view class="pf__avatar-guest-head"></view>
+        <view class="pf__avatar-guest-body"></view>
+      </view>
+    </view>
+    <text class="pf__name">还没有登录</text>
+    <text class="pf__guest-desc">登录后看到学习数据 / 错题本</text>
+    <view class="pf__guest-cta" bindtap="onLogin">
+      <text>立即登录</text>
+      <view class="ico-arrow"></view>
+    </view>
   </view>
 
   <view wx:if="{{userStore.isLoggedIn}}" class="pf__main">
-    <view class="pf__user">
-      <view class="pf__avatar">
-        <image
-          wx:if="{{userStore.user.avatar_url}}"
-          src="{{userStore.user.avatar_url}}"
-          mode="aspectFill"
-          class="pf__avatar-img"
-        />
-        <text wx:else class="pf__avatar-fallback">👤</text>
-      </view>
-      <view class="pf__user-meta">
-        <text class="pf__nickname">{{ userStore.user.nickname || '微信用户' }}</text>
-        <text class="pf__role">{{ roleLabel }}</text>
-      </view>
-    </view>
-
-    <view wx:if="{{userStore.stats}}" class="pf__stats card">
+    <!-- 学习数据:2x2 -->
+    <view class="pf__stats" wx:if="{{userStore.stats}}">
       <view class="pf__stat">
-        <text class="pf__stat-num">{{userStore.stats.total_papers}}</text>
         <text class="pf__stat-label">累计试卷</text>
+        <view class="pf__stat-value">
+          <text class="pf__stat-num">{{ userStore.stats.total_papers }}</text>
+          <text class="pf__stat-unit">套</text>
+        </view>
       </view>
       <view class="pf__stat">
-        <text class="pf__stat-num">{{accuracyLabel}}</text>
-        <text class="pf__stat-label">平均正确</text>
+        <text class="pf__stat-label">答题总数</text>
+        <view class="pf__stat-value">
+          <text class="pf__stat-num">{{ userStore.stats.total_questions }}</text>
+          <text class="pf__stat-unit">题</text>
+        </view>
       </view>
       <view class="pf__stat">
-        <text class="pf__stat-num">{{userStore.stats.active_mistakes}}</text>
+        <text class="pf__stat-label">平均正确率</text>
+        <view class="pf__stat-value">
+          <text class="pf__stat-num">{{ accuracyMain }}</text>
+          <text class="pf__stat-unit">{{ accuracyUnit }}</text>
+        </view>
+      </view>
+      <view class="pf__stat">
         <text class="pf__stat-label">待巩固</text>
+        <view class="pf__stat-value">
+          <text class="pf__stat-num">{{ userStore.stats.active_mistakes }}</text>
+          <text class="pf__stat-unit">题</text>
+        </view>
       </view>
     </view>
 
-    <view class="pf__section">
-      <view class="pf__row" bindtap="onMistake">
-        <text class="pf__row-icon">📕</text>
-        <text class="pf__row-title">错题本</text>
-        <text class="pf__row-extra">{{ userStore.stats.active_mistakes || 0 }}</text>
-        <text class="pf__row-arrow">›</text>
-      </view>
-      <view class="pf__row pf__row--disabled">
-        <text class="pf__row-icon">📜</text>
-        <text class="pf__row-title">历史试卷</text>
-        <text class="pf__row-extra">V2</text>
-      </view>
-      <view class="pf__row pf__row--disabled">
-        <text class="pf__row-icon">⭐</text>
-        <text class="pf__row-title">我的收藏</text>
-        <text class="pf__row-extra">V2</text>
+    <!-- 学习区列表 -->
+    <view class="pf__group">
+      <view class="pf__group-title">学习</view>
+      <view class="pf__list">
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onMistake"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-target">
+              <view class="pf__ico-target-ring"></view>
+              <view class="pf__ico-target-dot"></view>
+            </view>
+          </view>
+          <text class="pf__row-title">错题本</text>
+          <view wx:if="{{ userStore.stats.active_mistakes > 0 }}" class="pf__row-badge">
+            {{ userStore.stats.active_mistakes }}
+          </view>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
+
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onPapers"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-paper">
+              <view class="pf__ico-paper-line"></view>
+              <view class="pf__ico-paper-line pf__ico-paper-line--2"></view>
+            </view>
+          </view>
+          <text class="pf__row-title">历史试卷</text>
+          <text wx:if="{{ userStore.stats.total_papers > 0 }}" class="pf__row-extra">
+            {{ userStore.stats.total_papers }} 套
+          </text>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
+
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onFavorites"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-bookmark"></view>
+          </view>
+          <text class="pf__row-title">我的收藏</text>
+          <text wx:if="{{ favoriteCount > 0 }}" class="pf__row-extra">
+            {{ favoriteCount }} 本
+          </text>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
+
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onLibrary"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-paper">
+              <view class="pf__ico-paper-line"></view>
+              <view class="pf__ico-paper-line pf__ico-paper-line--2"></view>
+            </view>
+          </view>
+          <text class="pf__row-title">我的书库</text>
+          <text class="pf__row-extra">上传 PDF 自建书</text>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
       </view>
     </view>
 
-    <view class="pf__section">
-      <view class="pf__row" bindtap="onFeedback">
-        <text class="pf__row-icon">💬</text>
-        <text class="pf__row-title">反馈与建议</text>
-        <text class="pf__row-arrow">›</text>
-      </view>
-      <view class="pf__row" bindtap="onAbout">
-        <text class="pf__row-icon">ℹ️</text>
-        <text class="pf__row-title">关于我们</text>
-        <text class="pf__row-arrow">›</text>
+    <!-- 通用区列表 -->
+    <view class="pf__group">
+      <view class="pf__group-title">通用</view>
+      <view class="pf__list">
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onFeedback"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-chat">
+              <view class="pf__ico-chat-tail"></view>
+            </view>
+          </view>
+          <text class="pf__row-title">反馈与建议</text>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onSettings"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-cog pf__ico-cog--row"></view>
+          </view>
+          <text class="pf__row-title">设置</text>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
+        <view
+          class="pf__row"
+          hover-class="pf__row--hover"
+          hover-stay-time="80"
+          bindtap="onAbout"
+        >
+          <view class="pf__row-ico">
+            <view class="pf__ico-info"></view>
+          </view>
+          <text class="pf__row-title">关于</text>
+          <text class="pf__row-extra">v{{ appVersion }}</text>
+          <view class="ico-arrow pf__row-arrow"></view>
+        </view>
       </view>
     </view>
+
+    <view class="pf__brand-end">考题魔盒</view>
   </view>
 
-  <empty-state
-    wx:else
-    title="还没有登录"
-    description="登录后才能看到你的学习数据和错题本"
-    actionText="立即登录"
-    bind:action="onLogin"
-  />
-
-  <view style="height: 200rpx;"></view>
+  <view class="pf__spacer"></view>
   <custom-tab-bar active="profile" />
 </view>

@@ -30,8 +30,6 @@ export interface CurrentUser {
   nickname?: string;
   avatar_url?: string;
   role: UserRole;
-  is_minor: 0 | 1;
-  minor_mode_enabled: 0 | 1;
   is_first_login?: boolean;
 }
 
@@ -51,16 +49,28 @@ export interface QuotaSnapshot {
 
 // ===== 书籍 / 章节 =====
 
+export type BookImportStatus =
+  | 'preparing'
+  | 'extracting'
+  | 'splitting'
+  | 'ready'
+  | 'failed';
+
 export interface Book {
   id: string;
   title: string;
   author: string;
   cover_url: string | null;
   description: string | null;
-  category: string | null;
   tags: string[];
   is_recommended: boolean;
   is_favorited?: boolean;
+  /** M8 异步抽章状态(管理员录入的 ready;用户上传 / from-photo-set 创建时为 preparing → extracting → splitting → ready) */
+  import_status?: BookImportStatus;
+  import_progress?: number;
+  import_error?: string | null;
+  /** M8 PR2.6: 上传 PDF 自建书时双写生成的可校对 photo_set;有值则书详情页可跳"逐页校对" */
+  linked_photo_set_id?: string | null;
 }
 
 export interface Chapter {
@@ -69,9 +79,26 @@ export interface Chapter {
   title: string;
   start_page?: number | null;
   end_page?: number | null;
+  /** 该章节是否已有可阅读的正文(后端 toChapterBrief 注入) */
+  has_content?: boolean;
 }
 
 // ===== 拍照 / OCR =====
+
+export type PhotoRegionKind = 'text' | 'chart' | 'formula' | 'table';
+
+export interface PhotoRegion {
+  id: string;
+  /** [x, y, w, h], coord=normalized 时取值 0~1, coord=pixel 时为像素 */
+  bbox: [number, number, number, number];
+  coord: 'normalized' | 'pixel';
+  kind: PhotoRegionKind;
+  ocr_text?: string | null;
+  chart_data?: Record<string, unknown> | null;
+  /** 0/1: 是否已校对 */
+  corrected?: number;
+  note?: string | null;
+}
 
 export interface PhotoItem {
   id: string;
@@ -80,6 +107,7 @@ export interface PhotoItem {
   order_no: number;
   ocr_text?: string | null;
   ocr_status?: OcrTaskStatus;
+  regions?: PhotoRegion[];
 }
 
 export interface PhotoSet {
@@ -88,6 +116,8 @@ export interface PhotoSet {
   expires_at?: string;
   ocr_status: OcrTaskStatus;
   ocr_text?: string;
+  /** 已识别页数占比 0-100, 由 backend OcrSnapshot.progress 提供 */
+  progress?: number;
   items: PhotoItem[];
 }
 

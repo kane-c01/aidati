@@ -1,42 +1,196 @@
-<view class="photo">
-  <view class="photo__viewfinder">
-    <view class="photo__frame">
-      <text class="photo__frame-text">把书页放进框内, 光线均匀效果最好</text>
+<view class="cap">
+  <!-- 顶栏 -->
+  <view class="cap__top">
+    <view class="cap__top-meta">
+      <text class="cap__top-title">扫描出题</text>
+      <text class="cap__top-sub">{{ headerSub }}</text>
     </view>
-    <view class="photo__hint">已拍 {{totalCount}} / {{maxPages}} 页</view>
+    <view class="cap__counter" wx:if="{{totalCount > 0}}">
+      <text class="cap__counter-num">{{ totalCount }}</text>
+      <text class="cap__counter-divider">/</text>
+      <text class="cap__counter-max">{{ maxPages }}</text>
+    </view>
   </view>
 
-  <scroll-view scroll-x="{{true}}" class="photo__thumbs">
-    <view
-      wx:for="{{thumbs}}"
-      wx:key="key"
-      class="photo__thumb"
-      data-index="{{index}}"
-      data-key="{{item.key}}"
-      bindlongpress="onLongPress"
-      bindtap="onThumbTap"
-    >
-      <image class="photo__thumb-img" src="{{item.path}}" mode="aspectFill" />
-      <view class="photo__thumb-no">{{index + 1}}</view>
-      <view class="photo__thumb-remove" catchtap="onRemove" data-index="{{index}}">✕</view>
+  <!-- 文件导入入口(M8 PR2.6):支持微信聊天里的 PDF / 图片 -->
+  <view
+    class="cap__import"
+    hover-class="cap__import--hover"
+    hover-stay-time="80"
+    bindtap="onChooseFile"
+  >
+    <view class="cap__import-ico">
+      <view class="cap__import-doc">
+        <view class="cap__import-doc-fold"></view>
+        <view class="cap__import-doc-line"></view>
+        <view class="cap__import-doc-line cap__import-doc-line--short"></view>
+      </view>
     </view>
-    <view class="photo__thumb photo__thumb--add" wx:if="{{totalCount < maxPages}}" bindtap="onChoose">
-      <text>+</text>
+    <view class="cap__import-meta">
+      <text class="cap__import-title">从文件导入</text>
+      <text class="cap__import-sub">微信聊天里的 PDF / 图片, AI 自动按页拆分</text>
     </view>
-  </scroll-view>
+    <view class="cap__import-arrow"></view>
+  </view>
 
-  <view class="photo__actions safe-area-bottom">
-    <button class="photo__action-side" bindtap="onChooseAlbum">🖼<text class="photo__action-label">相册</text></button>
-    <button class="photo__action-main {{ totalCount >= maxPages ? 'disabled' : '' }}" disabled="{{totalCount >= maxPages}}" bindtap="onChooseCamera">
-      <view class="photo__action-circle">📷</view>
-    </button>
-    <button class="photo__action-side {{ totalCount === 0 ? 'disabled' : '' }}" disabled="{{totalCount === 0 || submitting}}" bindtap="onFinish">
-      <text>{{ submitting ? '上传中' : '完成' }}</text>
-      <text class="photo__action-label">{{totalCount}} 张</text>
-    </button>
+  <!-- 取景区 -->
+  <view class="cap__view">
+    <view wx:if="{{totalCount === 0}}" class="cap__view-empty">
+      <view class="cap__bracket cap__bracket--tl"></view>
+      <view class="cap__bracket cap__bracket--tr"></view>
+      <view class="cap__bracket cap__bracket--bl"></view>
+      <view class="cap__bracket cap__bracket--br"></view>
+      <view class="cap__book">
+        <view class="cap__book-spine"></view>
+        <view class="cap__book-page">
+          <view class="cap__book-line"></view>
+          <view class="cap__book-line cap__book-line--short"></view>
+          <view class="cap__book-line"></view>
+          <view class="cap__book-line cap__book-line--short"></view>
+        </view>
+        <view class="cap__book-page">
+          <view class="cap__book-line"></view>
+          <view class="cap__book-line cap__book-line--short"></view>
+          <view class="cap__book-line"></view>
+          <view class="cap__book-line cap__book-line--short"></view>
+        </view>
+      </view>
+      <text class="cap__view-title">把书页放进框内</text>
+      <text class="cap__view-desc">光线均匀, 文字清晰, AI 识别更稳</text>
+    </view>
+
+    <view wx:else class="cap__view-thumb">
+      <image
+        class="cap__view-thumb-img"
+        src="{{thumbs[thumbs.length - 1].path}}"
+        mode="aspectFill"
+        bindtap="onPreviewLatest"
+      />
+      <view class="cap__view-thumb-meta">
+        <text class="cap__view-thumb-page">第 {{ totalCount }} 页</text>
+        <text class="cap__view-thumb-tip">点击预览, 长按可裁剪 / 删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 进度条:无配色, 仅给个分量感 -->
+  <view class="cap__progress">
+    <view class="cap__progress-bar" style="width: {{ progressPercent }}%"></view>
+  </view>
+
+  <!-- 三个动作按钮 -->
+  <view class="cap__actions">
+    <view
+      class="cap__act {{ disabledAlbum ? 'cap__act--disabled' : '' }}"
+      hover-class="cap__act--hover"
+      hover-stay-time="80"
+      bindtap="onChooseAlbum"
+    >
+      <view class="cap__act-ico">
+        <view class="cap__ico-album">
+          <view class="cap__ico-album-frame"></view>
+          <view class="cap__ico-album-mt"></view>
+        </view>
+      </view>
+      <text class="cap__act-label">从相册</text>
+    </view>
+
+    <view
+      class="cap__act cap__act--main {{ totalCount >= maxPages ? 'cap__act--disabled' : '' }}"
+      hover-class="cap__act--main-hover"
+      hover-stay-time="80"
+      bindtap="onChooseCamera"
+    >
+      <view class="cap__act-main-ring"></view>
+      <view class="cap__act-main-circle">
+        <view class="cap__ico-shutter"></view>
+      </view>
+      <text class="cap__act-main-label">{{ totalCount >= maxPages ? '已满' : '拍照' }}</text>
+    </view>
+
+    <view
+      class="cap__act {{ totalCount === 0 ? 'cap__act--disabled' : '' }}"
+      hover-class="cap__act--hover"
+      hover-stay-time="80"
+      bindtap="onPreviewLatest"
+    >
+      <view class="cap__act-ico">
+        <view class="cap__ico-eye">
+          <view class="cap__ico-eye-iris"></view>
+        </view>
+      </view>
+      <text class="cap__act-label">预览</text>
+    </view>
+  </view>
+
+  <!-- 已拍画廊 -->
+  <view wx:if="{{thumbs.length}}" class="cap__gallery">
+    <view class="cap__gallery-head">
+      <text class="cap__gallery-title">已拍 {{ totalCount }} 张</text>
+      <text class="cap__gallery-hint">✂ 裁剪 · ✕ 删除 · 点图预览</text>
+    </view>
+    <view class="cap__grid">
+      <view
+        wx:for="{{thumbs}}"
+        wx:key="key"
+        class="cap__cell"
+        data-index="{{index}}"
+        data-key="{{item.key}}"
+        bindlongpress="onLongPress"
+        bindtap="onThumbTap"
+        hover-class="cap__cell--hover"
+        hover-stay-time="80"
+      >
+        <image class="cap__cell-img" src="{{item.path}}" mode="aspectFill" />
+        <view class="cap__cell-page">{{ index + 1 }}</view>
+        <view class="cap__cell-crop" catchtap="onCellCrop" data-index="{{index}}">
+          <text class="cap__cell-crop-text">✂</text>
+        </view>
+        <view class="cap__cell-x" catchtap="onRemove" data-index="{{index}}">
+          <view class="cap__cell-x-line"></view>
+          <view class="cap__cell-x-line cap__cell-x-line--2"></view>
+        </view>
+      </view>
+      <view
+        wx:if="{{ totalCount < maxPages }}"
+        class="cap__cell cap__cell--add"
+        bindtap="onChooseCamera"
+        hover-class="cap__cell--add-hover"
+        hover-stay-time="80"
+      >
+        <view class="cap__cell-plus">
+          <view class="cap__cell-plus-h"></view>
+          <view class="cap__cell-plus-v"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 提示行(纯文字) -->
+  <view class="cap__hint">
+    <text class="cap__hint-text">{{ tipText }}</text>
+  </view>
+
+  <!-- 完成 CTA -->
+  <view class="cap__finish">
+    <view
+      class="cap__finish-btn {{ submitting || totalCount === 0 ? 'cap__finish-btn--disabled' : '' }}"
+      hover-class="cap__finish-btn--hover"
+      hover-stay-time="80"
+      bindtap="onFinish"
+    >
+      <view wx:if="{{!submitting}}" class="cap__finish-btn-ico">
+        <view class="cap__ico-check"></view>
+      </view>
+      <view wx:else class="cap__finish-btn-spin"></view>
+      <text class="cap__finish-btn-text">{{ submitText }}</text>
+    </view>
+    <text wx:if="{{ totalCount > 0 && !submitting }}" class="cap__finish-meta">
+      上传后 AI 自动出题, 大约 {{ estTime }}
+    </text>
   </view>
 
   <ai-disclaimer variant="block" />
-  <view style="height: 200rpx;"></view>
+  <view class="cap__spacer"></view>
   <custom-tab-bar active="photo" />
 </view>

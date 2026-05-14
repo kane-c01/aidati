@@ -1,0 +1,106 @@
+<view class="region">
+  <view class="region__hint">
+    在图片上长按拖动选出区域, 选中后在下方设置类型并填入识别文字。图表类无需输入文字, 由系统识别结构。
+  </view>
+
+  <view
+    class="region__canvas"
+    bindtouchstart="onStart"
+    bindtouchmove="onMove"
+    bindtouchend="onEnd"
+    bindtouchcancel="onEnd"
+  >
+    <image
+      class="region__img"
+      src="{{imageUrl}}"
+      mode="widthFix"
+      bind:load="onImgLoad"
+    />
+
+    <view
+      wx:for="{{regions}}"
+      wx:key="id"
+      class="region__rect region__rect--{{item.kind}} {{item.id === activeId ? 'region__rect--active' : ''}}"
+      style="left: {{item.bbox[0] * stageW}}px; top: {{item.bbox[1] * stageH}}px; width: {{item.bbox[2] * stageW}}px; height: {{item.bbox[3] * stageH}}px;"
+      data-id="{{item.id}}"
+      catchtap="onPickRegion"
+    >
+      <text class="region__rect-label">{{ item._label }}</text>
+    </view>
+
+    <view
+      wx:if="{{drawing.live}}"
+      class="region__rect region__rect--drawing"
+      style="left: {{drawing.x}}px; top: {{drawing.y}}px; width: {{drawing.w}}px; height: {{drawing.h}}px;"
+    ></view>
+  </view>
+
+  <view class="region__list">
+    <view class="region__list-title">
+      已选区域({{regions.length}})
+    </view>
+
+    <block wx:if="{{!regions.length}}">
+      <view class="region__empty">还没框选任何区域,先在上图拖一下</view>
+    </block>
+
+    <view
+      wx:for="{{regions}}"
+      wx:key="id"
+      class="region__item {{item.id === activeId ? 'region__item--active' : ''}}"
+      data-id="{{item.id}}"
+      catchtap="onPickRegion"
+    >
+      <view class="region__item-head">
+        <text class="region__item-no">{{index + 1}}</text>
+        <view class="region__item-kinds">
+          <text
+            wx:for="{{kinds}}"
+            wx:for-item="k"
+            wx:key="value"
+            class="region__chip {{item.kind === k.value ? 'region__chip--on' : ''}}"
+            data-id="{{item.id}}"
+            data-kind="{{k.value}}"
+            catchtap="onChangeKind"
+          >{{ k.label }}</text>
+        </view>
+        <text
+          class="region__item-recognize {{ recognizingId === item.id ? 'region__item-recognize--busy' : '' }}"
+          data-id="{{item.id}}"
+          catchtap="onRecognize"
+        >{{ recognizingId === item.id ? '识别中…' : 'AI 识别' }}</text>
+        <text
+          class="region__item-del"
+          data-id="{{item.id}}"
+          catchtap="onRemoveRegion"
+        >删除</text>
+      </view>
+
+      <textarea
+        wx:if="{{item.kind !== 'chart'}}"
+        class="region__item-text"
+        placeholder="点「AI 识别」自动填,或手动输入"
+        value="{{item.ocr_text}}"
+        data-id="{{item.id}}"
+        bindinput="onChangeText"
+        auto-height
+        maxlength="-1"
+      />
+
+      <view wx:else class="region__item-chart">
+        <text wx:if="{{!item._chartSummary}}">图表区域 — 点「AI 识别」让通义 VL 提取结构化数据</text>
+        <text wx:else>{{ item._chartSummary }}</text>
+      </view>
+    </view>
+  </view>
+
+  <ai-disclaimer variant="block" />
+  <view style="height: 200rpx;"></view>
+
+  <view class="region__action safe-area-bottom">
+    <button class="btn-ghost" bindtap="onClear" disabled="{{!regions.length || saving}}">清空</button>
+    <button class="btn-primary" bindtap="onSave" disabled="{{saving}}">
+      {{ saving ? '保存中...' : '保存框选(' + regions.length + ')' }}
+    </button>
+  </view>
+</view>

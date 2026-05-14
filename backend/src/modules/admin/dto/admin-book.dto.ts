@@ -87,11 +87,6 @@ export class CreateBookDto {
   pdf_pages?: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  category?: string;
-
-  @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
@@ -140,11 +135,6 @@ export class UpdateBookDto {
   pdf_pages?: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  category?: string;
-
-  @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
@@ -173,6 +163,21 @@ export class ImportChaptersDto {
   replace?: boolean;
 }
 
+export class ImportPdfDto {
+  @IsOptional()
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(512)
+  pdf_url?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  max_chapters?: number;
+}
+
 export class ListAdminBooksQuery {
   @IsOptional()
   @IsString()
@@ -182,6 +187,10 @@ export class ListAdminBooksQuery {
   @IsOptional()
   @IsIn(['1', '0', '-1', 'all'])
   status?: '1' | '0' | '-1' | 'all';
+
+  @IsOptional()
+  @IsIn(['admin', 'user_upload', 'public_domain', 'all'])
+  source?: 'admin' | 'user_upload' | 'public_domain' | 'all';
 
   @IsOptional()
   @IsString()

@@ -45,13 +45,16 @@ class LLMClient:
         )
 
         last_err: Exception | None = None
+        # max_tokens: 10 题 JSON ≈ 1500 tokens, 单题 short_answer 多约 250 tokens
+        # 留 1.3x 安全余量, 比 4096 节省网络/buffer 时间约 1-2s
+        max_out = min(3072, 256 * config.count + 512)
         for attempt in range(2):
             try:
                 result = await self.chain.chat(
                     system=system,
                     user=user,
                     json_mode=True,
-                    max_tokens=4096,
+                    max_tokens=max_out,
                     temperature=0.4 if attempt == 0 else 0.1,
                 )
                 payload = extract_json(result.text)

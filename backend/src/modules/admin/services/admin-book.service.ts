@@ -6,6 +6,7 @@ import {
   NotFoundBusinessException,
 } from '../../../common/exceptions/business.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes';
+import { AiService } from '../../../infra/ai-service/ai-service.service';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 
 import type {
@@ -26,7 +27,6 @@ export interface AdminBookView {
   cover_url: string | null;
   pdf_url: string | null;
   pdf_pages: number | null;
-  category: string | null;
   tags: unknown;
   source: BookSource;
   copyright_status: string | null;
@@ -34,6 +34,7 @@ export interface AdminBookView {
   is_recommended: boolean;
   sort_weight: number;
   created_by: string;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
   chapters_count: number;
@@ -45,6 +46,7 @@ export class AdminBookService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly aiService: AiService,
     private readonly adminLog: AdminLogService,
   ) {}
 
@@ -62,6 +64,9 @@ export class AdminBookService {
       where.status = parseInt(query.status, 10);
     }
     if (query.created_by) where.createdBy = BigInt(query.created_by);
+    if (query.source && query.source !== 'all') {
+      where.source = query.source as BookSource;
+    }
     if (query.keyword && query.keyword.trim().length > 0) {
       const kw = query.keyword.trim();
       where.OR = [
@@ -78,27 +83,40 @@ export class AdminBookService {
         orderBy: [{ sortWeight: 'desc' }, { createdAt: 'desc' }],
         skip: (query.page - 1) * query.page_size,
         take: query.page_size,
-        include: { _count: { select: { chapters: true } } },
+        include: {
+          _count: { select: { chapters: true } },
+          creator: { select: { nickname: true, username: true } },
+        },
       }),
     ]);
 
     return {
-      list: rows.map((b) => this.toView(b, b._count.chapters)),
+      list: rows.map((b) =>
+        this.toView(b, b._count.chapters, b.creator?.nickname ?? b.creator?.username ?? null),
+      ),
       pagination: { page: query.page, page_size: query.page_size, total },
     };
   }
 
-  async detail(bookId: bigint): Promise<AdminBookView & { chapters: ChapterAdminView[] }> {
+  async detail(
+    bookId: bigint,
+    includeChapterFull = false,
+  ): Promise<AdminBookView & { chapters: ChapterAdminView[] }> {
     const book = await this.prisma.book.findUnique({
       where: { id: bookId },
       include: {
         chapters: { orderBy: { orderNo: 'asc' } },
+        creator: { select: { nickname: true, username: true } },
       },
     });
     if (!book) throw new NotFoundBusinessException('书籍不存在');
     return {
-      ...this.toView(book, book.chapters.length),
-      chapters: book.chapters.map((c) => this.toChapterView(c)),
+      ...this.toView(
+        book,
+        book.chapters.length,
+        book.creator?.nickname ?? book.creator?.username ?? null,
+      ),
+      chapters: book.chapters.map((c) => this.toChapterView(c, includeChapterFull)),
     };
   }
 
@@ -114,7 +132,6 @@ export class AdminBookService {
         coverUrl: dto.cover_url ?? null,
         pdfUrl: dto.pdf_url ?? null,
         pdfPages: dto.pdf_pages ?? null,
-        category: dto.category ?? null,
         tags: (dto.tags ?? []) as Prisma.InputJsonValue,
         source: BookSource.admin,
         copyrightStatus: dto.copyright_status ?? null,
@@ -146,7 +163,6 @@ export class AdminBookService {
         coverUrl: dto.cover_url,
         pdfUrl: dto.pdf_url,
         pdfPages: dto.pdf_pages,
-        category: dto.category,
         tags: dto.tags ? (dto.tags as Prisma.InputJsonValue) : undefined,
         copyrightStatus: dto.copyright_status,
         sortWeight: dto.sort_weight,
@@ -255,6 +271,90 @@ export class AdminBookService {
     return { imported: dto.chapters.length, total };
   }
 
+  // ===== M8: PDF 自动入章节 =====
+
+  /**
+   * POST /v1/admin/books/:id/import-pdf
+   *
+   * 流程:
+   *   1. 取 book.pdfUrl(或入参 pdfUrl 覆盖)
+   *   2. ai-service.extractDocument({url, kind:'pdf'}) → markdown + chapter_hints
+   *   3. ai-service.splitChapters(markdown, hints, book.title) → chapters[]
+   *   4. 整体替换 book 的 chapters
+   */
+  async importPdfToChapters(
+    adminId: bigint,
+    bookId: bigint,
+    pdfUrlOverride?: string | null,
+    maxChapters?: number,
+  ): Promise<{ imported: number; total: number; pages: number; chapter_hints: number }> {
+    const book = await this.findOrThrow(bookId);
+    const pdfUrl = pdfUrlOverride?.trim() || book.pdfUrl;
+    if (!pdfUrl) {
+      throw new BusinessException(ERROR_CODES.PARAM_INVALID, '该书未关联 PDF, 请先填 pdf_url');
+    }
+
+    this.logger.log(`importPdfToChapters book=${bookId} pdf=${pdfUrl}`);
+
+    const doc = await this.aiService.extractDocument({ url: pdfUrl, kind: 'pdf' });
+    if (!doc.markdown.trim()) {
+      throw new BusinessException(
+        ERROR_CODES.LLM_UNAVAILABLE,
+        'PDF 抽取不到文字, 大概率是扫描版 PDF;请改用拍照上传或先 OCR 转文字版',
+      );
+    }
+
+    const split = await this.aiService.splitChapters({
+      markdown: doc.markdown,
+      chapter_hints: doc.chapter_hints ?? [],
+      book_title: book.title,
+      max_chapters: maxChapters,
+    });
+
+    if (!split.chapters?.length) {
+      throw new BusinessException(ERROR_CODES.LLM_UNAVAILABLE, 'AI 未能切出任何章节');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.chapter.deleteMany({ where: { bookId } });
+      await tx.chapter.createMany({
+        data: split.chapters.map((c, idx) => ({
+          bookId,
+          orderNo: c.order_no || idx + 1,
+          title: (c.title ?? `第 ${idx + 1} 章`).slice(0, 200),
+          contentSummary: c.content_summary ?? null,
+          contentFull: c.content_full ?? null,
+        })),
+      });
+      // 同步 PDF 总页数
+      await tx.book.update({
+        where: { id: bookId },
+        data: { pdfPages: doc.pages.length, pdfUrl },
+      });
+    });
+
+    await this.adminLog.record({
+      adminId,
+      action: 'book.import_pdf',
+      targetType: 'book',
+      targetId: bookId,
+      meta: {
+        pdf_url: pdfUrl,
+        pages: doc.pages.length,
+        chapters: split.chapters.length,
+        usage: split.usage as Prisma.InputJsonValue | null,
+      } as Prisma.InputJsonValue,
+    });
+
+    const total = await this.prisma.chapter.count({ where: { bookId } });
+    return {
+      imported: split.chapters.length,
+      total,
+      pages: doc.pages.length,
+      chapter_hints: doc.chapter_hints?.length ?? 0,
+    };
+  }
+
   // ===== 内部 =====
 
   private async findOrThrow(bookId: bigint): Promise<Book> {
@@ -263,7 +363,11 @@ export class AdminBookService {
     return book;
   }
 
-  private toView(b: Book, chaptersCount: number): AdminBookView {
+  private toView(
+    b: Book,
+    chaptersCount: number,
+    createdByName: string | null = null,
+  ): AdminBookView {
     return {
       id: b.id.toString(),
       title: b.title,
@@ -273,7 +377,6 @@ export class AdminBookService {
       cover_url: b.coverUrl,
       pdf_url: b.pdfUrl,
       pdf_pages: b.pdfPages,
-      category: b.category,
       tags: b.tags ?? null,
       source: b.source,
       copyright_status: b.copyrightStatus,
@@ -281,14 +384,15 @@ export class AdminBookService {
       is_recommended: b.isRecommended === 1,
       sort_weight: b.sortWeight,
       created_by: b.createdBy.toString(),
+      created_by_name: createdByName,
       created_at: b.createdAt.toISOString(),
       updated_at: b.updatedAt.toISOString(),
       chapters_count: chaptersCount,
     };
   }
 
-  private toChapterView(c: Chapter): ChapterAdminView {
-    return {
+  private toChapterView(c: Chapter, includeFull = false): ChapterAdminView {
+    const row: ChapterAdminView = {
       id: c.id.toString(),
       order_no: c.orderNo,
       title: c.title,
@@ -297,6 +401,10 @@ export class AdminBookService {
       content_summary: c.contentSummary,
       content_length: c.contentFull?.length ?? 0,
     };
+    if (includeFull) {
+      row.content_full = c.contentFull ?? null;
+    }
+    return row;
   }
 }
 
@@ -308,4 +416,6 @@ export interface ChapterAdminView {
   end_page: number | null;
   content_summary: string | null;
   content_length: number;
+  /** include_chapter_full=1 时返回正文片段 */
+  content_full?: string | null;
 }

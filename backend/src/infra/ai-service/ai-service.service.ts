@@ -6,11 +6,21 @@ import { ERROR_CODES } from '../../common/constants/error-codes';
 import { BusinessException } from '../../common/exceptions/business.exception';
 
 import type {
+  ExtractDocumentReqDto,
+  ExtractDocumentResDto,
   GeneratePaperRequestDto,
   GeneratePaperResponseDto,
   GradePaperRequestDto,
   GradePaperResponseDto,
+  PdfToImagesReqDto,
+  PdfToImagesResDto,
+  RecognizeRegionReqDto,
+  RecognizeRegionResDto,
+  SplitChaptersReqDto,
+  SplitChaptersResDto,
 } from './ai-service.types';
+import { LlmRuntimeService } from './llm-runtime.service';
+import { VisionRuntimeService } from './vision-runtime.service';
 
 /**
  * AI 编排服务客户端
@@ -25,7 +35,11 @@ export class AiService {
   private readonly http: AxiosInstance;
   private readonly internalToken: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    private readonly llmRuntime: LlmRuntimeService,
+    private readonly visionRuntime: VisionRuntimeService,
+  ) {
     const baseURL = config.getOrThrow<string>('AI_SERVICE_BASE_URL');
     this.internalToken = config.getOrThrow<string>('AI_SERVICE_INTERNAL_TOKEN');
     this.http = axios.create({
@@ -40,11 +54,60 @@ export class AiService {
   }
 
   async generatePaper(req: GeneratePaperRequestDto): Promise<GeneratePaperResponseDto> {
-    return this.call<GeneratePaperResponseDto>('/generate-paper', req);
+    const llm_runtime = await this.llmRuntime.buildForAiCall();
+    return this.call<GeneratePaperResponseDto>('/generate-paper', { ...req, llm_runtime });
   }
 
   async gradePaper(req: GradePaperRequestDto): Promise<GradePaperResponseDto> {
-    return this.call<GradePaperResponseDto>('/grade-paper', req);
+    const llm_runtime = await this.llmRuntime.buildForAiCall();
+    return this.call<GradePaperResponseDto>('/grade-paper', { ...req, llm_runtime });
+  }
+
+  /** 整图 / PDF 单页 → Markdown(M8) */
+  async extractDocument(req: ExtractDocumentReqDto): Promise<ExtractDocumentResDto> {
+    const vision_runtime = await this.visionRuntime.buildForAiCall();
+    return this.call<ExtractDocumentResDto>('/v1/extract/document', {
+      ...req,
+      vision_runtime,
+    });
+  }
+
+  /** 单区域识别(框选 OCR / 公式 / 表格 / 图表)(M8) */
+  async recognizeRegion(req: RecognizeRegionReqDto): Promise<RecognizeRegionResDto> {
+    const vision_runtime = await this.visionRuntime.buildForAiCall();
+    return this.call<RecognizeRegionResDto>('/v1/extract/region', {
+      ...req,
+      vision_runtime,
+    });
+  }
+
+  /** 整篇 markdown → 结构化章节(M8,LLM 切章) */
+  async splitChapters(req: SplitChaptersReqDto): Promise<SplitChaptersResDto> {
+    const llm_runtime = await this.llmRuntime.buildForAiCall();
+    return this.call<SplitChaptersResDto>('/v1/extract/split-chapters', {
+      ...req,
+      llm_runtime,
+    });
+  }
+
+  /**
+   * PDF → 多页 PNG(M8 PR2.6,纯本地 fitz, 不调 LLM)
+   *
+   * 注:返回包内每页都是 base64-PNG, 50 页 ~25MB → 调用方应注意:
+   *  - 单进程内存占用约 50-80MB
+   *  - axios 默认 maxContentLength=∞, 这里用 200MB 安全闸
+   *  - timeout 拉到 5 分钟(扫描版 200 页约 2 分钟)
+   */
+  async pdfToImages(req: PdfToImagesReqDto): Promise<PdfToImagesResDto> {
+    return this.call<PdfToImagesResDto>(
+      '/v1/extract/pdf-to-images',
+      req,
+      {
+        timeout: 300_000,
+        maxContentLength: 200 * 1024 * 1024,
+        maxBodyLength: 200 * 1024 * 1024,
+      },
+    );
   }
 
   async health(): Promise<boolean> {
@@ -58,9 +121,13 @@ export class AiService {
 
   // ===== 内部 =====
 
-  private async call<T>(path: string, body: unknown): Promise<T> {
+  private async call<T>(
+    path: string,
+    body: unknown,
+    overrides?: { timeout?: number; maxContentLength?: number; maxBodyLength?: number },
+  ): Promise<T> {
     try {
-      const r = await this.http.post<T>(path, body);
+      const r = await this.http.post<T>(path, body, overrides);
       return r.data;
     } catch (err) {
       const ax = err as AxiosError<{ detail?: { code?: number; message?: string } | string }>;

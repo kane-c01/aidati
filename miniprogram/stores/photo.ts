@@ -35,6 +35,7 @@ interface PhotoActions {
   setSetId: (id: string | null) => void;
   enqueueLocal: (paths: string[]) => void;
   removeLocalAt: (index: number) => void;
+  replaceLocalAt: (index: number, newPath: string) => void;
   upsertUploaded: (item: UploadedPhoto) => void;
   removeUploaded: (id: string) => void;
   setUploadedList: (items: PhotoItem[]) => void;
@@ -80,6 +81,15 @@ const initial = {
     const self = this as unknown as PhotoStore;
     runInAction(() => {
       self.localQueue = self.localQueue.filter((_, i) => i !== index);
+    });
+  },
+  replaceLocalAt(index: number, newPath: string): void {
+    const self = this as unknown as PhotoStore;
+    runInAction(() => {
+      if (index < 0 || index >= self.localQueue.length) return;
+      const next = [...self.localQueue];
+      next[index] = { tempFilePath: newPath, ts: Date.now() };
+      self.localQueue = next;
     });
   },
   upsertUploaded(item: UploadedPhoto): void {

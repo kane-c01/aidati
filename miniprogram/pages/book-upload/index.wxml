@@ -1,0 +1,95 @@
+<view class="up">
+  <view class="up__hero">
+    <view class="up__hero-title">{{ editing ? '编辑书籍信息' : '上传新书' }}</view>
+    <view class="up__hero-sub">{{ editing ? '修改书名 / 作者 / 简介,不重新跑 AI 抽章' : '上传 PDF, AI 会同时为它建「章节」和「可校对的拍照集」' }}</view>
+  </view>
+
+  <view class="up__form">
+    <!-- 封面 -->
+    <view class="up__field">
+      <text class="up__label">封面(可选)</text>
+      <view class="up__cover-area">
+        <view class="up__cover" bindtap="onPickCover">
+          <image
+            wx:if="{{coverUrl}}"
+            class="up__cover-img"
+            src="{{coverUrl}}"
+            mode="aspectFill"
+          />
+          <view wx:else class="up__cover-placeholder">
+            <text class="up__cover-plus">+</text>
+            <text class="up__cover-tip">点选封面</text>
+          </view>
+        </view>
+        <view wx:if="{{coverUrl && !uploadingCover}}" class="up__cover-clear" bindtap="onClearCover">×</view>
+        <view wx:if="{{uploadingCover}}" class="up__cover-mask">上传中…</view>
+      </view>
+    </view>
+
+    <!-- PDF -->
+    <view class="up__field" wx:if="{{!editing}}">
+      <text class="up__label">PDF *</text>
+      <view class="up__pdf">
+        <view wx:if="{{!pdfUrl}}" class="up__pdf-pick" bindtap="onPickPdf">
+          <text class="up__pdf-icon">📄</text>
+          <text class="up__pdf-tip">{{ uploadingPdf ? 'PDF 上传中,请稍候…' : '点选本地 PDF 上传' }}</text>
+          <text class="up__pdf-sub">（最大 50MB · 文字版 / 扫描版均可 · 扫描版会自动调用 AI 视觉识别)</text>
+        </view>
+        <view wx:else class="up__pdf-done">
+          <text class="up__pdf-name">✅ {{ pdfName || 'PDF 已上传' }}</text>
+          <text class="up__pdf-replace" bindtap="onPickPdf">重新选择</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 书名 -->
+    <view class="up__field">
+      <text class="up__label">书名 *</text>
+      <input
+        class="up__input"
+        value="{{title}}"
+        placeholder="比如:高一物理 第三章 习题集"
+        bindinput="onTitleChange"
+        maxlength="60"
+      />
+    </view>
+
+    <!-- 作者 -->
+    <view class="up__field">
+      <text class="up__label">作者(可选)</text>
+      <input
+        class="up__input"
+        value="{{author}}"
+        placeholder="留空则不显示"
+        bindinput="onAuthorChange"
+        maxlength="32"
+      />
+    </view>
+
+    <!-- 简介 -->
+    <view class="up__field">
+      <text class="up__label">简介(可选)</text>
+      <textarea
+        class="up__textarea"
+        value="{{description}}"
+        placeholder="一两句话简介,会显示在书库卡片上"
+        bindinput="onDescriptionChange"
+        auto-height
+        maxlength="500"
+      />
+    </view>
+  </view>
+
+  <ai-disclaimer wx:if="{{!editing}}" variant="block" />
+  <view style="height: 200rpx"></view>
+
+  <view class="up__action safe-area-bottom">
+    <button
+      class="btn-primary up__submit"
+      disabled="{{ submitting || !canSubmit }}"
+      bindtap="onSubmit"
+    >
+      {{ submitting ? '处理中…' : (editing ? '保存' : '提交并 AI 抽章') }}
+    </button>
+  </view>
+</view>

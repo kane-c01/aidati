@@ -270,9 +270,10 @@ export interface UploadResult {
 }
 
 /**
- * 走 wx.uploadFile 把本地文件直传到 OSS 给的 put_url
+ * 把本地文件直传到 OSS 预签名 PUT URL
  *
- * 注:OSS 直传不能加 Authorization 头
+ * wx.uploadFile 只支持 POST multipart; 预签 PUT URL 要求 HTTP PUT + raw body,
+ * 因此先用 FileSystemManager 读文件为 ArrayBuffer, 再 wx.request PUT。
  */
 export function uploadToOss(opts: {
   filePath: string;
@@ -281,12 +282,24 @@ export function uploadToOss(opts: {
   fieldName?: string;
 }): Promise<UploadResult> {
   return new Promise((resolve) => {
-    wx.uploadFile({
-      url: opts.putUrl,
+    const fs = wx.getFileSystemManager();
+    fs.readFile({
       filePath: opts.filePath,
-      name: opts.fieldName ?? 'file',
-      formData: opts.formData,
-      success: (res) => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, statusCode: res.statusCode, message: res.data }),
+      success: (fileRes) => {
+        wx.request({
+          url: opts.putUrl,
+          method: 'PUT',
+          header: { 'Content-Type': 'image/jpeg' },
+          data: fileRes.data as ArrayBuffer,
+          success: (res) =>
+            resolve({
+              ok: res.statusCode >= 200 && res.statusCode < 300,
+              statusCode: res.statusCode,
+              message: typeof res.data === 'string' ? res.data : '',
+            }),
+          fail: (err) => resolve({ ok: false, statusCode: 0, message: err.errMsg }),
+        });
+      },
       fail: (err) => resolve({ ok: false, statusCode: 0, message: err.errMsg }),
     });
   });

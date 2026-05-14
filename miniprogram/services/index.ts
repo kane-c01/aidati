@@ -7,6 +7,7 @@
 
 export { authService } from './auth';
 export { bookService } from './book';
+export { favoriteService } from './favorite';
 export { mistakeService } from './mistake';
 export { paperService } from './paper';
 export { photoService } from './photo';

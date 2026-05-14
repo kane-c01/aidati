@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     glm_api_key: str = ""
     glm_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
 
+    # 视觉模型(VL)
+    vision_provider: str = "qwen_vl"
+    vision_model: str = "qwen-vl-max"
+    vision_cost_per_1k_input: float = 0.003
+    vision_cost_per_1k_output: float = 0.006
+
     # 微信内容安全 API(M6 接入)
     wechat_appid: str = ""
     wechat_secret: str = ""

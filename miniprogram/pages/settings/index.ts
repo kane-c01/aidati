@@ -1,26 +1,21 @@
 /**
  * U14 设置页
- *
- * 注:未成年模式 is_minor=1 一旦设置不可改回(03-API §3.2),
- *    所以这里只允许在 minorModeEnabled 上做开关。
  */
 
 import { createStoreBindings } from 'mobx-miniprogram-bindings';
 
-import { authService, userService, HttpError } from '../../services/index';
+import { authService, HttpError } from '../../services/index';
 import { confirm, hideLoading, showLoading, toast } from '../../utils/toast';
 import { env } from '../../config/env';
 import { userStore } from '../../stores/user';
 
 interface PageData {
-  minorMode: boolean;
   vibrate: boolean;
   version: string;
   cacheLabel: string;
 }
 
 interface PageMethods {
-  onMinorToggle: (e: WechatMiniprogram.SwitchChange) => Promise<void>;
   onVibrateToggle: (e: WechatMiniprogram.SwitchChange) => void;
   onClearCache: () => Promise<void>;
   onOpenAgreement: (e: WechatMiniprogram.BaseEvent) => void;
@@ -32,7 +27,6 @@ interface PageMethods {
 
 Page<PageData, PageMethods>({
   data: {
-    minorMode: false,
     vibrate: true,
     version: env.CLIENT_VERSION,
     cacheLabel: '0 KB',
@@ -46,7 +40,6 @@ Page<PageData, PageMethods>({
       fields: ['isLoggedIn', 'user'],
       actions: [],
     });
-    this.setData({ minorMode: userStore.user?.minor_mode_enabled === 1 });
     this.refreshCache();
   },
 
@@ -64,25 +57,6 @@ Page<PageData, PageMethods>({
       });
     } catch {
       this.setData({ cacheLabel: '— KB' });
-    }
-  },
-
-  async onMinorToggle(e) {
-    const v = e.detail.value;
-    if (!userStore.isLoggedIn) {
-      toast('请先登录', 'none');
-      this.setData({ minorMode: !v });
-      return;
-    }
-    try {
-      await userService.updateMe({ minor_mode_enabled: v ? 1 : 0 });
-      userStore.patchUser({ minor_mode_enabled: v ? 1 : 0 });
-      this.setData({ minorMode: v });
-      toast('已保存', 'success');
-    } catch (err) {
-      this.setData({ minorMode: !v });
-      if (err instanceof HttpError) toast(err.message, 'error');
-      else toast('保存失败', 'error');
     }
   },
 
@@ -116,7 +90,6 @@ Page<PageData, PageMethods>({
     const titleMap: Record<string, string> = {
       user: '用户协议',
       privacy: '隐私政策',
-      minor: '儿童个人信息保护规则',
     };
     wx.showModal({
       title: titleMap[key] ?? '协议',

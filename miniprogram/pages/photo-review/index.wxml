@@ -1,8 +1,8 @@
 <view class="pr">
   <view wx:if="{{ocrStatus === 'pending' || ocrStatus === 'processing'}}" class="pr__loading">
     <loading-stage
-      title="正在识别文字..."
-      hint="20 页大约 60 秒, 通常 ≤ 30 秒"
+      title="{{loadingTitle}}"
+      hint="{{loadingHint}}"
       progress="{{progress}}"
     />
   </view>
@@ -18,11 +18,45 @@
   <block wx:else>
     <view class="pr__head">
       <text class="pr__head-title">校对识别结果({{items.length}} 页)</text>
-      <text class="pr__head-hint">手动修正 OCR 错字, 不动也可直接出题</text>
+      <text class="pr__head-hint">勾选要计入出题的页, 不动也可直接出题</text>
+      <view class="pr__head-actions">
+        <text class="pr__head-meta">已勾选 {{ selectedCount }}/{{ items.length }} 页</text>
+        <text class="pr__head-link" catchtap="onSelectAll">全选</text>
+        <text class="pr__head-link" catchtap="onInvertSelect">反选</text>
+      </view>
     </view>
 
-    <view wx:for="{{items}}" wx:key="id" class="pr__item">
-      <view class="pr__item-no">第 {{index + 1}} 页</view>
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="pr__item {{ item._selected ? '' : 'pr__item--unselected' }}"
+    >
+      <view class="pr__item-no">
+        <view
+          class="pr__check {{ item._selected ? 'pr__check--on' : '' }}"
+          data-id="{{item.id}}"
+          catchtap="onToggleSelect"
+        >
+          <view wx:if="{{item._selected}}" class="pr__check-tick"></view>
+        </view>
+        <text>第 {{index + 1}} 页</text>
+        <text
+          wx:if="{{item.regions && item.regions.length}}"
+          class="pr__item-region-tag"
+        >已框选 {{item.regions.length}} 区</text>
+        <text
+          class="pr__item-region-btn pr__item-region-btn--ghost"
+          data-id="{{item.id}}"
+          catchtap="onRecropPhoto"
+        >✂ 重裁</text>
+        <text
+          class="pr__item-region-btn"
+          data-id="{{item.id}}"
+          data-image="{{item.image_url}}"
+          data-regions="{{item._regionsRaw}}"
+          catchtap="onOpenRegion"
+        >框选区域</text>
+      </view>
       <image class="pr__item-img" mode="aspectFit" src="{{item.image_url}}" />
       <view class="pr__item-label">识别文本:</view>
       <textarea
@@ -35,7 +69,7 @@
         maxlength="-1"
       />
       <view wx:if="{{!item.ocr_text}}" class="pr__item-warn">
-        ⚠ 此页未识别到清晰文本, 建议重拍或删除
+        ⚠ 此页未识别到清晰文本, 建议重拍、删除或在「框选区域」内手动补
       </view>
     </view>
 
@@ -43,8 +77,15 @@
 
     <view class="pr__action safe-area-bottom">
       <button
+        class="btn-ghost pr__action-side"
+        disabled="{{saving || convertingBook || !items.length}}"
+        bindtap="onSaveAsBook"
+      >
+        {{ convertingBook ? '整理中…' : '📚 保存为书' }}
+      </button>
+      <button
         class="btn-primary"
-        disabled="{{saving || !items.length}}"
+        disabled="{{saving || convertingBook || !items.length}}"
         bindtap="onContinue"
       >
         {{ saving ? '保存中...' : '下一步:配置题型' }}

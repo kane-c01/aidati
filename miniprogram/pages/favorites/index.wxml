@@ -1,0 +1,48 @@
+<view class="fav">
+  <view class="fav__head">
+    <text class="fav__title">收藏的书</text>
+    <text class="fav__sub" wx:if="{{!loading}}">{{ total }} 本</text>
+  </view>
+
+  <view wx:if="{{loading && !items.length}}" class="fav__loading">
+    <skeleton-list count="6" />
+  </view>
+
+  <empty-state
+    wx:elif="{{!loading && !items.length}}"
+    title="还没收藏"
+    description="去书库逛逛, 看到合适的书右上角点星标"
+    actionText="去书库"
+    bind:action="onGotoBooks"
+  />
+
+  <view wx:else class="fav__grid">
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="fav__cell"
+      data-id="{{item.book_id}}"
+      hover-class="fav__cell--hover"
+      hover-stay-time="80"
+      bindtap="onBookTap"
+      bindlongpress="onLongPress"
+    >
+      <view class="fav__cover book-title-cover book-title-cover--md book-title-cover--tone-{{ item._tone }}">
+        <text class="book-title-cover__title">{{ item.title }}</text>
+        <text class="book-title-cover__author">{{ item.author || '匿名' }}</text>
+        <view class="fav__star">
+          <view class="fav__star-shape"></view>
+        </view>
+      </view>
+      <text class="fav__name ellipsis-2">{{ item.title }}</text>
+      <text class="fav__meta ellipsis-1">{{ item.author || '匿名' }}</text>
+    </view>
+  </view>
+
+  <view class="fav__loadmore" wx:if="{{items.length}}">
+    <text wx:if="{{loading}}">加载中…</text>
+    <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+  </view>
+
+  <view class="fav__spacer"></view>
+</view>

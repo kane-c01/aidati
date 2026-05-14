@@ -6,6 +6,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.models.llm_runtime import LlmRuntimeConfig
+
 QuestionType = Literal["single", "multiple", "judge", "fill", "short_answer"]
 DifficultyLevel = Literal["easy", "medium", "hard"]
 SourceType = Literal["book", "chapter", "photo_set"]
@@ -31,6 +33,10 @@ class GeneratePaperRequest(BaseModel):
     context_text: str = Field(min_length=10, max_length=80_000)
     book_title: Optional[str] = Field(default=None, max_length=256)
     chapter_titles: Optional[list[str]] = Field(default=None)
+    llm_runtime: Optional[LlmRuntimeConfig] = Field(
+        default=None,
+        description="业务后端注入的 Key/模型,覆盖进程环境变量",
+    )
 
 
 class GeneratedQuestion(BaseModel):

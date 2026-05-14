@@ -6,6 +6,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.models.llm_runtime import LlmRuntimeConfig
 from app.models.question import LlmUsage
 
 
@@ -26,6 +27,10 @@ class GradePaperRequest(BaseModel):
     paper_id: str
     user_id: str
     items: list[GradeAnswerItem] = Field(min_length=1, max_length=50)
+    llm_runtime: Optional[LlmRuntimeConfig] = Field(
+        default=None,
+        description="业务后端注入的 Key/模型,覆盖进程环境变量",
+    )
 
 
 class GradeAnswerResult(BaseModel):

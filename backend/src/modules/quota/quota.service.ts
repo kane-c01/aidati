@@ -124,21 +124,20 @@ export class QuotaService {
 
   /**
    * 退还 1 个配额(取消出题 / 出题失败)
-   * 不会把 used_count 减到负数
+   * 不会把 used_count 减到负数;并发场景下也是原子的
    */
   async refund(userId: bigint, reason: string): Promise<void> {
     const todayDate = todayInShanghaiAsDate();
     const dateStr = todayInShanghaiString();
 
-    const updated = await this.prisma.usageQuota.findUnique({
-      where: { userId_date: { userId, date: todayDate } },
-    });
-    if (!updated || updated.usedCount <= 0) return;
-
-    await this.prisma.usageQuota.update({
-      where: { userId_date: { userId, date: todayDate } },
-      data: { usedCount: { decrement: 1 } },
-    });
+    // 单条 SQL 同时做"判断 + 更新", 避免 findUnique + update 之间的 race condition
+    // (并发的两次 refund 不会都通过条件并各自 -1, 出现负数)
+    const result = await this.prisma.$executeRaw`
+      UPDATE usage_quota
+      SET used_count = used_count - 1
+      WHERE user_id = ${userId} AND date = ${todayDate} AND used_count > 0
+    `;
+    if (result === 0) return;
 
     this.redis.client
       .decr(this.redisKey(userId, dateStr))

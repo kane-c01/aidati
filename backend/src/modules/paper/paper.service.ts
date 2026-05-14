@@ -1,6 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  BookSource,
   GradedBy,
   type Answer,
   type Paper,
@@ -26,6 +27,7 @@ import {
   QUEUE_PAPER_GENERATE,
   QUEUE_PAPER_GRADE,
 } from '../../infra/queue/queue.constants';
+import { MistakeService } from '../mistake/mistake.service';
 import { QuotaService } from '../quota/quota.service';
 
 import type { CreatePaperDto } from './dto/create-paper.dto';
@@ -43,6 +45,23 @@ export interface PaperBriefView {
   total_questions: number;
   estimated_seconds?: number;
   created_at: string;
+}
+
+export interface PaperHistoryItem extends PaperBriefView {
+  /** 试卷归属书 / 章节标题 / 拍照集名(展示用) */
+  book_id: string | null;
+  book_title: string | null;
+  chapter_id: string | null;
+  chapter_title: string | null;
+  photo_set_id: string | null;
+  photo_set_name: string | null;
+
+  /** 客观批改后才有, 否则 null */
+  total_score: number | null;
+  max_score: number | null;
+  accuracy: number | null;
+  time_spent_sec: number | null;
+  answered_count: number;
 }
 
 export interface PaperView extends PaperBriefView {
@@ -121,6 +140,7 @@ export class PaperService {
     private readonly prisma: PrismaService,
     private readonly quota: QuotaService,
     private readonly grader: AnswerGraderService,
+    private readonly mistakes: MistakeService,
     @InjectQueue(QUEUE_PAPER_GENERATE) private readonly generateQueue: Queue<PaperGenerateJobData>,
     @InjectQueue(QUEUE_PAPER_GRADE) private readonly gradeQueue: Queue<PaperGradeJobData>,
   ) {}
@@ -175,6 +195,13 @@ export class PaperService {
         count: dto.config.count,
         custom_prompt: dto.config.custom_prompt ?? null,
         ...(extraChapterIds.length > 0 ? { extra_chapter_ids: extraChapterIds } : {}),
+        // photo_set 模式:用户在校对页勾选的子集(M9)
+        // 缺省 / 空 / 等于全部 photo: 不写入, 让 context-builder 走原逻辑(用 set.ocrText)
+        ...(dto.source_type === 'photo_set' &&
+        Array.isArray(dto.selected_photo_ids) &&
+        dto.selected_photo_ids.length > 0
+          ? { selected_photo_ids: dto.selected_photo_ids }
+          : {}),
       };
       paper = await this.prisma.paper.create({
         data: {
@@ -268,6 +295,125 @@ export class PaperService {
     };
   }
 
+  // ============ 列表(历史试卷) ============
+
+  /**
+   * GET /v1/papers
+   *
+   * 返回用户自己的试卷, 默认按创建时间倒序; 仅返回 status 在 ready/submitted/graded 的, 失败/生成中不展示。
+   * 一次性聚合 answer / question 统计, 单次 4 条 SQL 即可。
+   */
+  async listUserPapers(
+    userId: bigint,
+    opts: {
+      status?: 'all' | 'ready' | 'submitted' | 'graded';
+      bookId?: bigint | null;
+      chapterId?: bigint | null;
+      page: number;
+      pageSize: number;
+    },
+  ): Promise<{
+    list: PaperHistoryItem[];
+    pagination: { page: number; page_size: number; total: number };
+  }> {
+    const where: Prisma.PaperWhereInput = { userId };
+    if (opts.bookId) {
+      where.bookId = opts.bookId;
+    }
+    if (opts.chapterId) {
+      where.chapterId = opts.chapterId;
+    }
+    if (opts.status && opts.status !== 'all') {
+      where.status = opts.status as PaperStatus;
+    } else {
+      // 默认只展示有意义的(排除 generating / failed)
+      where.status = {
+        in: [PaperStatus.ready, PaperStatus.submitted, PaperStatus.graded],
+      };
+    }
+
+    const [total, papers] = await this.prisma.$transaction([
+      this.prisma.paper.count({ where }),
+      this.prisma.paper.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (opts.page - 1) * opts.pageSize,
+        take: opts.pageSize,
+        include: {
+          book: { select: { id: true, title: true } },
+          chapter: { select: { id: true, title: true } },
+          photoSet: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    if (papers.length === 0) {
+      return {
+        list: [],
+        pagination: { page: opts.page, page_size: opts.pageSize, total },
+      };
+    }
+
+    const paperIds = papers.map((p) => p.id);
+
+    const [answerAgg, questionAgg] = await this.prisma.$transaction([
+      this.prisma.answer.groupBy({
+        by: ['paperId'],
+        where: { userId, paperId: { in: paperIds } },
+        _sum: { score: true, timeSpentSec: true },
+        _count: true,
+        orderBy: { paperId: 'asc' },
+      }),
+      this.prisma.question.groupBy({
+        by: ['paperId'],
+        where: { paperId: { in: paperIds } },
+        _sum: { score: true },
+        orderBy: { paperId: 'asc' },
+      }),
+    ]);
+
+    const ansMap = new Map(answerAgg.map((a) => [a.paperId.toString(), a]));
+    const qMap = new Map(questionAgg.map((q) => [q.paperId.toString(), q]));
+
+    const list: PaperHistoryItem[] = papers.map((p) => {
+      const pid = p.id.toString();
+      const ans = ansMap.get(pid);
+      const q = qMap.get(pid);
+
+      const isGraded = p.status === PaperStatus.graded;
+      const totalScore = ans?._sum?.score ?? null;
+      const maxScore = q?._sum?.score ?? null;
+      const accuracy =
+        isGraded && totalScore !== null && maxScore && maxScore > 0
+          ? Math.round((totalScore / maxScore) * 10000) / 10000
+          : null;
+
+      return {
+        id: pid,
+        status: p.status,
+        source_type: p.sourceType,
+        total_questions: p.totalQuestions,
+        created_at: p.createdAt.toISOString(),
+        book_id: p.bookId?.toString() ?? null,
+        book_title: p.book?.title ?? null,
+        chapter_id: p.chapterId?.toString() ?? null,
+        chapter_title: p.chapter?.title ?? null,
+        photo_set_id: p.photoSetId?.toString() ?? null,
+        photo_set_name: p.photoSet?.name ?? null,
+        total_score: isGraded ? totalScore : null,
+        max_score: isGraded ? maxScore : null,
+        accuracy,
+        time_spent_sec: ans?._sum?.timeSpentSec ?? null,
+        answered_count: typeof ans?._count === 'number' ? ans._count : 0,
+      };
+    });
+
+    return {
+      list,
+      pagination: { page: opts.page, page_size: opts.pageSize, total },
+    };
+  }
+
   // ============ 取消 ============
 
   /**
@@ -287,10 +433,20 @@ export class PaperService {
     const elapsed = Date.now() - paper.createdAt.getTime();
     const withinGrace = elapsed <= CANCEL_GRACE_MS;
 
-    await this.prisma.paper.update({
-      where: { id: paper.id },
+    // 用 updateMany + where 限定 generating, 防止与 worker 并发时把 ready 误改回 failed
+    // 时序: cancel 读到 generating → worker 在 select/update 之间已写 ready → cancel 再 update 会把 ready 翻成 failed
+    const updated = await this.prisma.paper.updateMany({
+      where: { id: paper.id, status: PaperStatus.generating },
       data: { status: PaperStatus.failed },
     });
+    if (updated.count === 0) {
+      // worker 抢先写完 ready → 取消已经无意义, 当作"刚好出题完成"返回, 让前端跳答题页
+      const fresh = await this.prisma.paper.findUnique({ where: { id: paper.id } });
+      throw new BusinessException(
+        ERROR_CODES.PARAM_INVALID,
+        `仅在 generating 状态可取消, 当前 ${fresh?.status ?? 'unknown'}`,
+      );
+    }
 
     if (withinGrace) {
       await this.quota.refund(userId, 'paper_cancel_within_grace');
@@ -497,18 +653,38 @@ export class PaperService {
       };
     }
 
-    // 所有题都是客观题, 批改已完成 → 触发错题入库 + mistakes
-    // 注:错题入库走专门 service, 由 grade-worker 在主观题路径走完后做;
-    // 这里我们直接异步触发(用 setImmediate 不阻塞 HTTP)
-    setImmediate(() => {
-      this.gradeQueue
-        .add(
-          'grade',
-          { paper_id: paper.id.toString(), user_id: userId.toString() },
-          { jobId: `paper-grade-${paper.id.toString()}`, priority: 1 },
-        )
-        .catch((err) => this.logger.warn(`grade queue 推送失败: ${(err as Error).message}`));
-    });
+    // 纯客观题:已在事务里完成所有打分, 此处同步把错题入库到 mistake 本
+    // 注:不再 enqueue grade-worker, 因为它的早退判断会让 status=graded 跳过错题循环
+    // (历史 BUG: setImmediate + worker 早退 → 客观题错题永远不入库)
+    try {
+      const refreshed = await this.prisma.answer.findMany({
+        where: { paperId: paper.id, userId },
+      });
+      const refreshedById = new Map(refreshed.map((a) => [a.questionId.toString(), a] as const));
+      let mistakeCount = 0;
+      for (const q of paper.questions) {
+        const a = refreshedById.get(q.id.toString());
+        if (!a) continue;
+        if (a.isCorrect === 0) {
+          await this.mistakes.recordWrong({
+            userId,
+            question: q,
+            bookId: paper.bookId ?? null,
+          });
+          mistakeCount++;
+        } else if (a.isCorrect === 1) {
+          await this.mistakes.recordCorrect({ userId, question: q });
+        }
+      }
+      this.logger.log(
+        `submit.objective_done paper=${paper.id} mistakes_added=${mistakeCount}`,
+      );
+    } catch (err) {
+      // 错题入库失败不阻塞结果返回, 只记日志便于排查
+      this.logger.error(
+        `submit.mistake_sync_failed paper=${paper.id} err=${(err as Error).message}`,
+      );
+    }
 
     return {
       paper_id: paper.id.toString(),
@@ -632,9 +808,11 @@ export class PaperService {
         throw new BusinessException(ERROR_CODES.PARAM_INVALID, 'book 模式必须传 book_id');
       }
       const book = await this.prisma.book.findUnique({ where: { id: BigInt(dto.book_id) } });
-      if (!book || book.status !== 1) {
+      if (!book || book.status !== 1 || book.deletedAt) {
         throw new BusinessException(ERROR_CODES.RESOURCE_NOT_FOUND, '书籍不存在或已下架');
       }
+      // user_upload 隐私校验:非 owner + 未推荐 → 视为不存在(与 BookService.getDetail 一致)
+      this.assertBookVisible(book, userId);
       return { bookId: book.id, chapterId: null, photoSetId: null, extraChapterIds: [] };
     }
 
@@ -654,6 +832,11 @@ export class PaperService {
         throw new BusinessException(ERROR_CODES.PARAM_INVALID, '只能选择同一本书的章节');
       }
       const main = chapters[0];
+      // 章节所属书籍可见性校验(对齐 BookService.getChapterFull)
+      if (main.book.status !== 1 || main.book.deletedAt) {
+        throw new BusinessException(ERROR_CODES.RESOURCE_NOT_FOUND, '章节所属书籍不存在或已下架');
+      }
+      this.assertBookVisible(main.book, userId);
       return {
         bookId: main.bookId,
         chapterId: main.id,
@@ -686,6 +869,21 @@ export class PaperService {
         return PaperSourceType.chapter;
       case 'photo_set':
         return PaperSourceType.photo_set;
+    }
+  }
+
+  /**
+   * 与 BookService.getDetail / getChapterFull 一致的可见性规则:
+   * user_upload 且未推荐时, 仅 owner 可见; 否则一律视为不存在
+   */
+  private assertBookVisible(
+    book: { source: BookSource; isRecommended: number; createdBy: bigint | null },
+    userId: bigint,
+  ): void {
+    if (book.source === BookSource.user_upload && book.isRecommended !== 1) {
+      if (book.createdBy !== userId) {
+        throw new NotFoundBusinessException('书籍不存在或已下架');
+      }
     }
   }
 

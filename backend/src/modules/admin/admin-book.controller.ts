@@ -19,6 +19,7 @@ import type { JwtPayload } from '../../common/types/auth.types';
 import {
   CreateBookDto,
   ImportChaptersDto,
+  ImportPdfDto,
   ListAdminBooksQuery,
   UpdateBookDto,
 } from './dto/admin-book.dto';
@@ -35,8 +36,13 @@ export class AdminBookController {
   }
 
   @Get(':id')
-  async detail(@Param('id', ParseBigIntPipe) id: bigint) {
-    return this.service.detail(id);
+  async detail(
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Query('include_chapter_full') includeChapterFull?: string,
+  ) {
+    const full =
+      includeChapterFull === '1' || includeChapterFull === 'true' || includeChapterFull === 'yes';
+    return this.service.detail(id, full);
   }
 
   @Post()
@@ -92,5 +98,25 @@ export class AdminBookController {
     @Body() dto: ImportChaptersDto,
   ) {
     return this.service.importChapters(BigInt(user.sub), id, dto);
+  }
+
+  /**
+   * POST /v1/admin/books/:id/import-pdf —— PDF 自动抽章节(M8)
+   * - 不传 body 时使用 book.pdf_url
+   * - 流程:pdfplumber 抽文字 → LLM 切章 → 整体替换原 chapters
+   */
+  @Post(':id/import-pdf')
+  @HttpCode(HttpStatus.OK)
+  async importPdf(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() dto: ImportPdfDto,
+  ) {
+    return this.service.importPdfToChapters(
+      BigInt(user.sub),
+      id,
+      dto?.pdf_url ?? null,
+      dto?.max_chapters,
+    );
   }
 }

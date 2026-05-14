@@ -10,6 +10,8 @@ import type {
   CreatePaperRequest,
   CreatePaperResponse,
   PaperDetailResponse,
+  PaperHistoryQuery,
+  PaperHistoryResponse,
   PaperResultResponse,
   SaveDraftRequest,
   SubmitAnswersRequest,
@@ -28,6 +30,16 @@ export const paperService = {
     const tag = userId ?? 'anon';
     const idemKey = buildIdempotencyKey(`paper-${tag}`);
     return http.post<CreatePaperResponse>('/papers', body, { idempotencyKey: idemKey });
+  },
+
+  list(query: PaperHistoryQuery = {}): Promise<PaperHistoryResponse> {
+    return http.get<PaperHistoryResponse>('/papers', {
+      status: query.status,
+      book_id: query.book_id,
+      chapter_id: query.chapter_id,
+      page: query.page,
+      page_size: query.page_size,
+    });
   },
 
   detail(id: string): Promise<PaperDetailResponse> {

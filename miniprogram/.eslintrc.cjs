@@ -10,13 +10,7 @@ module.exports = {
   env: {
     es2022: true,
   },
-  ignorePatterns: [
-    'miniprogram_npm',
-    'node_modules',
-    'dist',
-    '*.d.ts',
-    'ai智能出题',
-  ],
+  ignorePatterns: ['miniprogram_npm', 'node_modules', 'dist', '*.d.ts'],
   globals: {
     wx: 'readonly',
     App: 'readonly',

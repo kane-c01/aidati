@@ -1,8 +1,8 @@
 {
   "miniprogramRoot": "./",
   "projectname": "ai-quiz-miniprogram",
-  "description": "AI 智能出题学习小程序",
-  "appid": "wxcef384c31ad5c0bf",
+  "description": "考题魔盒",
+  "appid": "wxbf1827e42c059de9",
   "setting": {
     "urlCheck": false,
     "es6": true,
@@ -43,14 +43,7 @@
     "useCompilerPlugins": [
       "typescript"
     ],
-    "ignoreUploadUnusedFiles": true,
-    "compileWorklet": false,
-    "minifyWXML": true,
-    "localPlugins": false,
-    "disableUseStrict": false,
-    "condition": false,
-    "swc": false,
-    "disableSWC": true
+    "ignoreUploadUnusedFiles": true
   },
   "compileType": "miniprogram",
   "libVersion": "3.4.4",
@@ -58,10 +51,5 @@
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
-  },
-  "simulatorPluginLibVersion": {},
-  "packOptions": {
-    "ignore": [],
-    "include": []
   }
 }

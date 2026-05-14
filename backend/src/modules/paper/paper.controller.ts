@@ -1,10 +1,21 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParseBigIntPipe } from '../../common/pipes/parse-bigint.pipe';
 import type { JwtPayload } from '../../common/types/auth.types';
 
 import { CreatePaperDto } from './dto/create-paper.dto';
+import { ListPapersQuery } from './dto/list-papers.query';
 import { SaveDraftDto } from './dto/save-draft.dto';
 import { SubmitAnswersDto } from './dto/submit-answers.dto';
 import { PaperService } from './paper.service';
@@ -36,9 +47,23 @@ export class PaperController {
     return this.paperService.createPaper(BigInt(user.sub), user.role, dto, idempotencyKey);
   }
 
+  @Get()
+  async list(@CurrentUser() user: JwtPayload, @Query() query: ListPapersQuery) {
+    return this.paperService.listUserPapers(BigInt(user.sub), {
+      status: query.status,
+      bookId: query.book_id ? BigInt(query.book_id) : null,
+      chapterId: query.chapter_id ? BigInt(query.chapter_id) : null,
+      page: query.page,
+      pageSize: query.page_size,
+    });
+  }
+
   @Get(':id')
   async get(@CurrentUser() user: JwtPayload, @Param('id', ParseBigIntPipe) id: bigint) {
-    return this.paperService.getPaper(BigInt(user.sub), id);
+    // 注: 前端契约是 { paper: PaperView }(见 miniprogram/types/api.ts PaperDetailResponse),
+    // 这里必须包一层, 否则 paper-loading / paper-answer 解构出 undefined → 静默 TypeError → 死轮询
+    const paper = await this.paperService.getPaper(BigInt(user.sub), id);
+    return { paper };
   }
 
   @Post(':id/cancel')

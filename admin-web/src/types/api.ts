@@ -42,8 +42,6 @@ export interface UserBrief {
   nickname: string | null;
   avatar_url: string | null;
   role: UserRole;
-  is_minor: number;
-  minor_mode_enabled: number;
 }
 
 export interface UserMe {
@@ -100,7 +98,6 @@ export interface AdminBookView {
   cover_url: string | null;
   pdf_url: string | null;
   pdf_pages: number | null;
-  category: string | null;
   tags: unknown;
   source: 'admin' | 'user_upload' | 'public_domain';
   copyright_status: string | null;
@@ -108,6 +105,7 @@ export interface AdminBookView {
   is_recommended: boolean;
   sort_weight: number;
   created_by: string;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
   chapters_count: number;
@@ -125,6 +123,8 @@ export interface ChapterAdminView {
   end_page: number | null;
   content_summary: string | null;
   content_length: number;
+  /** 详情接口 include_chapter_full=1 时返回 */
+  content_full?: string | null;
 }
 
 export interface CreateBookPayload {
@@ -135,7 +135,6 @@ export interface CreateBookPayload {
   cover_url?: string;
   pdf_url?: string;
   pdf_pages?: number;
-  category?: string;
   tags?: string[];
   copyright_status?: 'public_domain' | 'licensed' | 'user_claimed' | 'unknown';
 }
@@ -162,8 +161,6 @@ export interface AdminUserView {
   avatar_url: string | null;
   role: UserRole;
   status: number;
-  is_minor: number;
-  minor_mode_enabled: number;
   privacy_version: string | null;
   privacy_agreed_at: string | null;
   last_login_at: string | null;
@@ -202,4 +199,54 @@ export interface SystemConfigView {
   description: string | null;
   updated_by: string | null;
   updated_at: string;
+}
+
+// ===== 拍照集(用户上传素材)=====
+
+export type OcrStatus = 'pending' | 'processing' | 'done' | 'failed';
+
+export type PhotoRegionKind = 'text' | 'chart' | 'formula' | 'table';
+
+export interface PhotoRegionView {
+  id: string;
+  bbox: [number, number, number, number];
+  coord: 'normalized' | 'pixel';
+  kind: PhotoRegionKind;
+  ocr_text: string | null;
+  chart_data: Record<string, unknown> | null;
+  corrected: number;
+  note: string | null;
+}
+
+export interface AdminPhotoView {
+  id: string;
+  photo_set_id: string;
+  order_no: number;
+  image_url: string;
+  ocr_text: string | null;
+  ocr_corrected: number;
+  regions: PhotoRegionView[];
+  created_at: string;
+}
+
+export interface AdminPhotoSetView {
+  id: string;
+  user_id: string;
+  user_nickname: string | null;
+  name: string | null;
+  ocr_status: OcrStatus;
+  total_pages: number;
+  ocr_text: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface AdminPhotoSetDetail extends AdminPhotoSetView {
+  photos: AdminPhotoView[];
+}
+
+export interface UpdateAdminPhotoPayload {
+  ocr_text?: string;
+  order_no?: number;
+  regions?: PhotoRegionView[];
 }

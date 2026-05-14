@@ -29,13 +29,6 @@
           maxlength="64"
         />
       </el-form-item>
-      <el-form-item label="分类">
-        <el-input
-          v-model="form.category"
-          maxlength="32"
-          placeholder="如:计算机 / 历史 / 数学"
-        />
-      </el-form-item>
       <el-form-item label="ISBN">
         <el-input
           v-model="form.isbn"
@@ -140,7 +133,6 @@ const emit = defineEmits<{
 interface BookForm {
   title: string;
   author?: string;
-  category?: string;
   isbn?: string;
   cover_url?: string;
   pdf_url?: string;
@@ -166,7 +158,6 @@ watch(
       Object.assign(form, {
         title: book.title,
         author: book.author ?? '',
-        category: book.category ?? '',
         isbn: book.isbn ?? '',
         cover_url: book.cover_url ?? '',
         pdf_url: book.pdf_url ?? '',
@@ -179,7 +170,6 @@ watch(
       Object.assign(form, {
         title: '',
         author: '',
-        category: '',
         isbn: '',
         cover_url: '',
         pdf_url: '',
@@ -207,7 +197,6 @@ async function onSubmit(): Promise<void> {
       const payload: UpdateBookPayload = {
         title: form.title,
         author: form.author || undefined,
-        category: form.category || undefined,
         isbn: form.isbn || undefined,
         cover_url: form.cover_url || undefined,
         pdf_url: form.pdf_url || undefined,
@@ -221,7 +210,6 @@ async function onSubmit(): Promise<void> {
       const payload: CreateBookPayload = {
         title: form.title,
         author: form.author || undefined,
-        category: form.category || undefined,
         isbn: form.isbn || undefined,
         cover_url: form.cover_url || undefined,
         pdf_url: form.pdf_url || undefined,

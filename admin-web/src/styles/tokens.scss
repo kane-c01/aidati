@@ -1,0 +1,124 @@
+// ===========================================
+// AI 出题管理后台 · 设计 Token
+// 品牌代号:Quietly Smart(配套 06-UI 设计规范.md)
+// ===========================================
+
+:root {
+  // ---------- 品牌色 ----------
+  --color-brand: #5b5bd6;
+  --color-brand-hover: #4949c4;
+  --color-brand-active: #3838b0;
+  --color-brand-soft: #eeeefc;
+  --color-brand-strong: rgba(91, 91, 214, 0.16);
+  --color-brand-shadow: 0 6px 18px rgba(91, 91, 214, 0.22);
+
+  // ---------- 功能色 ----------
+  --color-success: #1dbf73;
+  --color-success-soft: #e5f8ee;
+  --color-warning: #f5a623;
+  --color-warning-soft: #fef3dd;
+  --color-danger: #e14c4c;
+  --color-danger-soft: #fce8e8;
+  --color-info: #4a6fa5;
+  --color-info-soft: #e8eef8;
+
+  // ---------- 中性色 ----------
+  --color-text-1: #1a1a1a;
+  --color-text-2: #4a4a4a;
+  --color-text-3: #8c8c8c;
+  --color-text-4: #bfbfbf;
+  --color-text-on-brand: #ffffff;
+
+  --color-border: #e8e6e1;
+  --color-border-soft: #f0eeea;
+  --color-border-strong: #d8d6d1;
+
+  --color-bg-page: #fafaf7;
+  --color-bg-card: #ffffff;
+  --color-bg-soft: #f7f6f1;
+  --color-bg-elevated: #ffffff;
+  --color-bg-overlay: rgba(20, 20, 20, 0.5);
+
+  // 侧边栏 / 顶栏专用
+  --color-sidebar-bg: #0f1419;
+  --color-sidebar-bg-hover: rgba(255, 255, 255, 0.06);
+  --color-sidebar-bg-active: rgba(91, 91, 214, 0.18);
+  --color-sidebar-text: #c8ccd2;
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-text-muted: #6a7280;
+  --color-sidebar-border: rgba(255, 255, 255, 0.06);
+
+  --color-topbar-bg: rgba(255, 255, 255, 0.78);
+  --color-topbar-border: rgba(232, 230, 225, 0.8);
+
+  // ---------- 圆角 ----------
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  // ---------- 阴影 ----------
+  --shadow-xs: 0 1px 2px rgba(20, 20, 20, 0.04);
+  --shadow-sm: 0 2px 8px rgba(20, 20, 20, 0.04);
+  --shadow-md: 0 4px 16px rgba(20, 20, 20, 0.06);
+  --shadow-lg: 0 12px 36px rgba(20, 20, 20, 0.08);
+  --shadow-popover: 0 16px 40px rgba(15, 20, 25, 0.12);
+
+  // ---------- 间距 ----------
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  // ---------- 字号 ----------
+  --font-display: 28px;
+  --font-h1: 22px;
+  --font-h2: 18px;
+  --font-h3: 16px;
+  --font-body: 14px;
+  --font-caption: 12px;
+  --font-tiny: 11px;
+
+  // ---------- 缓动 ----------
+  --ease-quick: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-slow: 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  // ---------- Element Plus 主色覆盖 ----------
+  --el-color-primary: #5b5bd6;
+  --el-color-primary-light-3: #8585e3;
+  --el-color-primary-light-5: #a8a8eb;
+  --el-color-primary-light-7: #cccaf3;
+  --el-color-primary-light-8: #dedcf7;
+  --el-color-primary-light-9: #eeeefc;
+  --el-color-primary-dark-2: #4949c4;
+
+  --el-color-success: #1dbf73;
+  --el-color-success-light-9: #e5f8ee;
+  --el-color-warning: #f5a623;
+  --el-color-warning-light-9: #fef3dd;
+  --el-color-danger: #e14c4c;
+  --el-color-danger-light-9: #fce8e8;
+  --el-color-info: #4a6fa5;
+
+  --el-bg-color-page: var(--color-bg-page);
+  --el-text-color-primary: var(--color-text-1);
+  --el-text-color-regular: var(--color-text-2);
+  --el-text-color-secondary: var(--color-text-3);
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border-soft);
+
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 16px;
+
+  --el-box-shadow-light: var(--shadow-sm);
+  --el-box-shadow: var(--shadow-md);
+}

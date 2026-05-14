@@ -23,6 +23,12 @@ type PendingSource = {
   chapter_ids?: string[];
   photo_set_id?: string;
   book_title?: string | null;
+  /**
+   * photo_set 模式可选: 用户在校对页勾选的页 id 列表(去掉的不进出题)
+   * - undefined / 空: 走原逻辑(全选, 用 set.ocrText)
+   * - 非空: 后端按此过滤 photos.ocrText 重新拼接
+   */
+  selected_photo_ids?: string[];
 } | null;
 
 interface PaperState {

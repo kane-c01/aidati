@@ -28,18 +28,11 @@ dist/
 build/
 *.tsbuildinfo
 .next/
-
-# vue-tsc -b 在 vite.config.ts 旁边生成的 .d.ts/.js(每次 build 都会出, 没必要进 git)
-admin-web/vite.config.d.ts
-admin-web/vite.config.js
-# unplugin-auto-import / unplugin-vue-components 自动生成的 d.ts
-admin-web/src/auto-imports.d.ts
-admin-web/src/components.d.ts
-
-# HBuilderX 误生成的 uni-app 工程目录, 不属于本仓库
-miniprogram/ai智能出题/
 out/
 miniprogram/miniprogram_npm/
+
+# === 本地口令/备忘录（请勿提交） ===
+appid.txt
 
 # === 环境变量与密钥(按 §5.1 强制隔离) ===
 .env

@@ -22,8 +22,6 @@ export interface LoginResult extends TokenPair {
     nickname: string | null;
     avatar_url: string | null;
     role: UserRole;
-    is_minor: number;
-    minor_mode_enabled: number;
     is_first_login: boolean;
   };
 }
@@ -120,8 +118,6 @@ export class AuthService {
         nickname: user.nickname,
         avatar_url: user.avatarUrl,
         role: user.role,
-        is_minor: user.isMinor,
-        minor_mode_enabled: user.minorModeEnabled,
         is_first_login: isFirstLogin,
       },
     };
@@ -178,8 +174,6 @@ export class AuthService {
         nickname: updated.nickname,
         avatar_url: updated.avatarUrl,
         role: updated.role,
-        is_minor: updated.isMinor,
-        minor_mode_enabled: updated.minorModeEnabled,
         is_first_login: false,
       },
     };

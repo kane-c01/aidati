@@ -111,7 +111,10 @@ Page<PageData, PageMethods>({
       if (src.source_type === 'book') label = `整本书《${src.book_title ?? '?'}》`;
       else if (src.source_type === 'chapter')
         label = `《${src.book_title ?? '?'}》(已选 ${src.chapter_ids?.length ?? 0} 章)`;
-      else if (src.source_type === 'photo_set') label = '本次拍照内容';
+      else if (src.source_type === 'photo_set') {
+        const picked = src.selected_photo_ids?.length;
+        label = picked && picked > 0 ? `本次拍照内容(已选 ${picked} 页)` : '本次拍照内容';
+      }
     }
     this.setData({ sourceLabel: label });
 
@@ -215,6 +218,7 @@ Page<PageData, PageMethods>({
           book_id: src.book_id,
           chapter_ids: src.chapter_ids,
           photo_set_id: src.photo_set_id,
+          selected_photo_ids: src.selected_photo_ids,
           config: this.data.config,
         },
         userStore.user?.id,
