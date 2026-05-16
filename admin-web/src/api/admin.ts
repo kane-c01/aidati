@@ -6,6 +6,7 @@ import { api } from './http';
 import type {
   AdminBookDetail,
   AdminBookView,
+  AdminBookViewExt,
   AdminDashboard,
   AdminPhotoSetDetail,
   AdminPhotoSetView,
@@ -13,6 +14,7 @@ import type {
   AdminUserDetail,
   AdminUserView,
   ChapterImportItem,
+  CreateBookFromPhotoSetPayload,
   CreateBookPayload,
   LoginPayload,
   LoginResult,
@@ -22,6 +24,7 @@ import type {
   SystemConfigView,
   UpdateAdminPhotoPayload,
   UpdateBookPayload,
+  UploadPolicyResponse,
   UserMe,
 } from '@/types/api';
 
@@ -89,6 +92,22 @@ export const bookApi = {
     payload?: { pdf_url?: string; max_chapters?: number },
   ): Promise<{ imported: number; total: number; pages: number; chapter_hints: number }> =>
     api.post(`/admin/books/${id}/import-pdf`, payload ?? {}),
+  /** 从已校对拍照集创建书籍 */
+  fromPhotoSet: (payload: CreateBookFromPhotoSetPayload): Promise<AdminBookViewExt> =>
+    api.post('/admin/books/from-photo-set', payload),
+  /** 将拍照集 OCR 内容导入已有书籍的章节 */
+  importFromPhotoSet: (
+    id: string,
+    photoSetId: string,
+  ): Promise<{ imported: number; total: number }> =>
+    api.post(`/admin/books/${id}/import-from-photo-set`, { photo_set_id: photoSetId }),
+};
+
+// ===== 上传 =====
+
+export const uploadApi = {
+  getPolicy: (scene: 'photo' | 'cover' | 'pdf', contentType?: string): Promise<UploadPolicyResponse> =>
+    api.get('/upload/policy', { scene, content_type: contentType ?? (scene === 'pdf' ? 'application/pdf' : 'image/jpeg') }),
 };
 
 // ===== 用户 =====

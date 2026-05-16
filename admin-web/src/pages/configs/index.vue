@@ -391,7 +391,7 @@
           :closable="false"
           show-icon
           class="alert-tip"
-          title="密钥以明文写入数据库 system_config，请勿在公网暴露管理后台；留空时仍使用服务器环境变量中的 DEEPSEEK_API_KEY / QWEN_API_KEY 等。"
+          title="密钥以明文写入数据库 system_config；本页只展示 ••••••••<末 4 位> 占位,不显示真实值。输入框留空或保持占位提交,后端会拒绝覆盖。如需真正清除,请走 super_admin 工单流程。"
         />
         <el-row :gutter="20">
           <el-col
@@ -474,9 +474,10 @@
               </div>
               <el-input
                 v-model="form.llm_deepseek_api_key"
-                type="text"
-                clearable
-                placeholder="明文存储，留空则用环境变量"
+                type="password"
+                show-password
+                autocomplete="new-password"
+                placeholder="留空或保持占位 = 不修改"
                 class="num-input"
               />
             </div>
@@ -491,9 +492,10 @@
               </div>
               <el-input
                 v-model="form.llm_qwen_api_key"
-                type="text"
-                clearable
-                placeholder="明文存储，留空则用环境变量"
+                type="password"
+                show-password
+                autocomplete="new-password"
+                placeholder="留空或保持占位 = 不修改"
                 class="num-input"
               />
             </div>
@@ -508,9 +510,10 @@
               </div>
               <el-input
                 v-model="form.llm_glm_api_key"
-                type="text"
-                clearable
-                placeholder="明文存储，留空则用环境变量"
+                type="password"
+                show-password
+                autocomplete="new-password"
+                placeholder="留空或保持占位 = 不修改"
                 class="num-input"
               />
             </div>
@@ -613,6 +616,195 @@
         </div>
       </el-card>
 
+      <!-- 卡片 3.4:对象存储 OSS -->
+      <el-card
+        shadow="never"
+        class="config-card"
+      >
+        <template #header>
+          <div class="card-header">
+            <div>
+              <span class="card-title">对象存储 (OSS)</span>
+              <span class="card-tip">图片、PDF 等文件的存储配置,支持腾讯云 COS / 阿里云 OSS / 本地 MinIO</span>
+            </div>
+            <div class="card-header-right">
+              <el-tag
+                v-if="cardDirty.oss"
+                type="warning"
+                size="small"
+                effect="light"
+              >
+                未保存
+              </el-tag>
+              <el-button
+                type="primary"
+                :disabled="!cardDirty.oss"
+                :loading="saving.oss"
+                @click="saveOssCard"
+              >
+                保存修改
+              </el-button>
+            </div>
+          </div>
+        </template>
+        <el-alert
+          type="warning"
+          :closable="false"
+          show-icon
+          class="alert-tip"
+          title="修改存储配置后需要重启后端服务才能生效。留空的字段将使用服务器环境变量 (.env) 中的值。"
+        />
+        <el-row :gutter="20">
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
+            <div class="num-item">
+              <div class="num-label">
+                存储提供商
+              </div>
+              <div class="num-desc">
+                minio (本地开发) / tencent_cos (腾讯云) / aliyun_oss (阿里云)
+              </div>
+              <el-select
+                v-model="form.oss_provider"
+                filterable
+                allow-create
+                default-first-option
+                placeholder="留空使用环境变量"
+                class="num-input"
+              >
+                <el-option
+                  label="MinIO (本地开发)"
+                  value="minio"
+                />
+                <el-option
+                  label="腾讯云 COS"
+                  value="tencent_cos"
+                />
+                <el-option
+                  label="阿里云 OSS"
+                  value="aliyun_oss"
+                />
+              </el-select>
+            </div>
+          </el-col>
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
+            <div class="num-item">
+              <div class="num-label">
+                Endpoint
+              </div>
+              <div class="num-desc">
+                COS: https://cos.ap-guangzhou.myqcloud.com
+              </div>
+              <el-input
+                v-model="form.oss_endpoint"
+                clearable
+                placeholder="留空使用环境变量"
+                class="num-input"
+              />
+            </div>
+          </el-col>
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
+            <div class="num-item">
+              <div class="num-label">
+                Bucket
+              </div>
+              <div class="num-desc">
+                对象存储桶名称
+              </div>
+              <el-input
+                v-model="form.oss_bucket"
+                clearable
+                placeholder="留空使用环境变量"
+                class="num-input"
+              />
+            </div>
+          </el-col>
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
+            <div class="num-item">
+              <div class="num-label">
+                Region
+              </div>
+              <div class="num-desc">
+                COS: ap-guangzhou / OSS: oss-cn-hangzhou
+              </div>
+              <el-input
+                v-model="form.oss_region"
+                clearable
+                placeholder="留空使用环境变量"
+                class="num-input"
+              />
+            </div>
+          </el-col>
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
+            <div class="num-item">
+              <div class="num-label">
+                Access Key
+              </div>
+              <div class="num-desc">
+                COS: SecretId / OSS: AccessKeyId
+              </div>
+              <el-input
+                v-model="form.oss_access_key"
+                clearable
+                placeholder="明文存储,留空使用环境变量"
+                class="num-input"
+              />
+            </div>
+          </el-col>
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
+            <div class="num-item">
+              <div class="num-label">
+                Secret Key
+              </div>
+              <div class="num-desc">
+                COS: SecretKey / OSS: AccessKeySecret
+              </div>
+              <el-input
+                v-model="form.oss_secret_key"
+                type="password"
+                show-password
+                clearable
+                placeholder="明文存储,留空使用环境变量"
+                class="num-input"
+              />
+            </div>
+          </el-col>
+          <el-col :xs="24">
+            <div class="num-item">
+              <div class="num-label">
+                公开访问基址 (Public Base URL)
+              </div>
+              <div class="num-desc">
+                用于拼接可访问的文件 URL,如 https://your-bucket.cos.ap-guangzhou.myqcloud.com
+              </div>
+              <el-input
+                v-model="form.oss_public_base"
+                clearable
+                placeholder="留空使用环境变量"
+                class="num-input"
+              />
+            </div>
+          </el-col>
+        </el-row>
+      </el-card>
+
       <!-- 卡片 3.5:视觉识别(OCR / 图表 / 公式 / 表格) -->
       <el-card
         shadow="never"
@@ -700,8 +892,10 @@
               </div>
               <el-input
                 v-model="form.vision_api_key"
-                clearable
-                placeholder="sk-xxx 或留空(复用通义 Key)"
+                type="password"
+                show-password
+                autocomplete="new-password"
+                placeholder="留空或保持占位 = 不修改"
                 class="num-input"
               />
             </div>
@@ -1056,6 +1250,14 @@ interface ConfigForm {
   llm_deepseek_base_url: string;
   llm_qwen_base_url: string;
   llm_glm_base_url: string;
+  // 对象存储 OSS
+  oss_provider: string;
+  oss_endpoint: string;
+  oss_bucket: string;
+  oss_region: string;
+  oss_access_key: string;
+  oss_secret_key: string;
+  oss_public_base: string;
   // M8 视觉模型(图片 OCR / 图表 / 公式 / 表格识别)
   vision_provider: string;
   vision_model: string;
@@ -1100,6 +1302,13 @@ const KNOWN_KEYS = new Set<string>([
   'llm_deepseek_base_url',
   'llm_qwen_base_url',
   'llm_glm_base_url',
+  'oss_provider',
+  'oss_endpoint',
+  'oss_bucket',
+  'oss_region',
+  'oss_access_key',
+  'oss_secret_key',
+  'oss_public_base',
   'vision_provider',
   'vision_model',
   'vision_api_key',
@@ -1127,6 +1336,13 @@ function makeDefaultForm(): ConfigForm {
     llm_deepseek_base_url: '',
     llm_qwen_base_url: '',
     llm_glm_base_url: '',
+    oss_provider: '',
+    oss_endpoint: '',
+    oss_bucket: '',
+    oss_region: '',
+    oss_access_key: '',
+    oss_secret_key: '',
+    oss_public_base: '',
     vision_provider: 'qwen_vl',
     vision_model: 'qwen-vl-max',
     vision_api_key: '',
@@ -1150,6 +1366,7 @@ const saving = reactive({
   announce: false,
   quota: false,
   llm: false,
+  oss: false,
   vision: false,
   safety: false,
   versions: false,
@@ -1205,6 +1422,15 @@ const cardDirty = computed(() => ({
     'llm_deepseek_base_url',
     'llm_qwen_base_url',
     'llm_glm_base_url',
+  ]),
+  oss: isDirty([
+    'oss_provider',
+    'oss_endpoint',
+    'oss_bucket',
+    'oss_region',
+    'oss_access_key',
+    'oss_secret_key',
+    'oss_public_base',
   ]),
   vision: isDirty(['vision_provider', 'vision_model', 'vision_api_key', 'vision_base_url']),
   safety: isDirty(['sensitive_words']),
@@ -1276,6 +1502,13 @@ function applyRowsToForm(list: SystemConfigView[]): void {
     'llm_deepseek_base_url',
     'llm_qwen_base_url',
     'llm_glm_base_url',
+    'oss_provider',
+    'oss_endpoint',
+    'oss_bucket',
+    'oss_region',
+    'oss_access_key',
+    'oss_secret_key',
+    'oss_public_base',
     'vision_provider',
     'vision_model',
     'vision_api_key',
@@ -1301,6 +1534,21 @@ function applyRowsToForm(list: SystemConfigView[]): void {
   original.value = JSON.parse(JSON.stringify(fresh)) as ConfigForm;
 }
 
+// === 敏感字段名集合(与后端 isSecretKey 保持一致) ===
+const SECRET_KEYS = new Set<keyof ConfigForm>([
+  'llm_deepseek_api_key',
+  'llm_qwen_api_key',
+  'llm_glm_api_key',
+  'vision_api_key',
+]);
+
+/** 后端脱敏值: 全 • 或 ••••••••<最多 8 位明文尾> */
+function isMaskedValue(v: unknown): boolean {
+  if (typeof v !== 'string' || v.length === 0) return false;
+  if (!v.startsWith('•')) return false;
+  return /^•+[a-zA-Z0-9\-_=+/]{0,8}$/.test(v);
+}
+
 // === 卡片保存(逐 key 调用现有 PUT) ===
 async function patchKeys(keys: (keyof ConfigForm)[]): Promise<void> {
   const changed = keys.filter(
@@ -1308,6 +1556,12 @@ async function patchKeys(keys: (keyof ConfigForm)[]): Promise<void> {
   );
   for (const k of changed) {
     let value: unknown = form[k];
+
+    // 敏感字段: 用户没动 / 把脱敏占位原样提交 / 仅删了一两位 → 一律视为"不修改", 不发请求
+    if (SECRET_KEYS.has(k) && isMaskedValue(value)) {
+      continue;
+    }
+
     // 数字字段防止 NaN/null
     if (typeof original.value[k] === 'number' && (value === null || Number.isNaN(value))) {
       value = original.value[k];
@@ -1368,6 +1622,25 @@ async function saveLlmCard(): Promise<void> {
     void load();
   } finally {
     saving.llm = false;
+  }
+}
+
+async function saveOssCard(): Promise<void> {
+  saving.oss = true;
+  try {
+    await patchKeys([
+      'oss_provider',
+      'oss_endpoint',
+      'oss_bucket',
+      'oss_region',
+      'oss_access_key',
+      'oss_secret_key',
+      'oss_public_base',
+    ]);
+    ElMessage.success('OSS 配置已保存,重启后端服务后生效');
+    void load();
+  } finally {
+    saving.oss = false;
   }
 }
 

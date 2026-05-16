@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Prisma 种子数据
  * 文档:02-数据库设计文档.md §3.13(system_config 初始化)
@@ -9,8 +10,16 @@
  *
  * Seed 内容:
  * 1. system_config 13 项默认配置
- * 2. 默认超级管理员 admin / admin123(!首次部署后必须改密码!)
+ * 2. 默认超级管理员 admin
+ *    - 密码: 优先取环境变量 ADMIN_DEFAULT_PASSWORD;
+ *           未设置则随机生成 24 位强密码,并打印到 stdout (仅打印一次, 不入库明文)
+ *    - 已存在则跳过 (避免覆盖)
+ *
+ * 注:本文件不在 backend/tsconfig.json 的 include 内, 顶部 reference 让 IDE 找到 node 类型。
+ * ts-node 实际运行不受影响。
  */
+import { randomBytes } from 'node:crypto';
+
 import { Prisma, PrismaClient, UserRole } from '@prisma/client';
 
 import { hashPassword } from '../src/common/utils/password';
@@ -112,30 +121,65 @@ async function upsertSystemConfig(): Promise<void> {
 /**
  * 默认超级管理员账号
  * - 仅在「该 username 还不存在」时插入(已存在不会覆盖密码,避免误踩)
- * - 默认密码 admin123, 首次登录后请马上改
+ * - 密码来源(优先级从高到低):
+ *   1. 环境变量 ADMIN_DEFAULT_PASSWORD
+ *   2. 自动生成 24 字节随机密码(打印到 stdout 一次)
+ * - 禁止使用历史弱密码 admin123 等;若环境变量明文出现在禁用列表会立即报错
  */
+const FORBIDDEN_DEFAULT_PASSWORDS = new Set([
+  'admin',
+  'admin123',
+  'password',
+  '123456',
+  '12345678',
+  'qwerty',
+]);
+
+function resolveDefaultPassword(): { password: string; source: 'env' | 'random' } {
+  const fromEnv = (process.env.ADMIN_DEFAULT_PASSWORD ?? '').trim();
+  if (fromEnv.length > 0) {
+    if (FORBIDDEN_DEFAULT_PASSWORDS.has(fromEnv.toLowerCase()) || fromEnv.length < 12) {
+      throw new Error(
+        `ADMIN_DEFAULT_PASSWORD 不可使用弱密码(≥12 位,且不在历史泄露列表). 当前值已被拒绝。`,
+      );
+    }
+    return { password: fromEnv, source: 'env' };
+  }
+  // 24 字节 → base64url 32 字符,足以抗在线爆破
+  const random = randomBytes(24).toString('base64url');
+  return { password: random, source: 'random' };
+}
+
 async function ensureDefaultSuperAdmin(): Promise<void> {
   const username = 'admin';
-  const defaultPassword = 'admin123';
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
     console.log(`✅ 默认超管已存在 user_id=${existing.id} username=${username},不重置密码`);
     return;
   }
+  const { password, source } = resolveDefaultPassword();
   const created = await prisma.user.create({
     data: {
       username,
-      passwordHash: hashPassword(defaultPassword),
+      passwordHash: hashPassword(password),
       nickname: '超级管理员',
       role: UserRole.super_admin,
       status: 1,
-      // 后台账号无 openid
       openid: null,
     },
   });
-  console.log(
-    `🔑 已创建默认超管 user_id=${created.id} username=${username} 密码=${defaultPassword}(请尽快改密码!)`,
-  );
+
+  const banner = '='.repeat(72);
+  console.log(`\n${banner}`);
+  console.log(`🔑 已创建默认超管 user_id=${created.id} username=${username}`);
+  if (source === 'random') {
+    console.log(`🔐 自动生成密码(仅显示这一次,请立即保存到密码管理器):`);
+    console.log(`    ${password}`);
+    console.log(`⚠️  下次 seed 不会再显示;丢失需通过 SQL 重置 passwordHash`);
+  } else {
+    console.log(`🔐 已使用 ADMIN_DEFAULT_PASSWORD 环境变量中的密码`);
+  }
+  console.log(`${banner}\n`);
 }
 
 async function main(): Promise<void> {

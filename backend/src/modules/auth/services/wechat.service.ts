@@ -33,10 +33,16 @@ export class WechatService {
   private readonly isProd: boolean;
   private readonly http: AxiosInstance;
 
+  private readonly devMockEnabled: boolean;
+
   constructor(private readonly configService: ConfigService) {
     this.appId = configService.get<string>('WECHAT_APPID', '');
     this.appSecret = configService.get<string>('WECHAT_SECRET', '');
     this.isProd = configService.get<string>('NODE_ENV') === 'production';
+    // 与 auth.service.deriveDevRole 双开关保持一致:
+    // 必须显式 ENABLE_DEV_MOCK=true 且非 production 才走 mock 路径,
+    // 防止 staging/preview 漏掉 NODE_ENV 时被任意人 mock 登录。
+    this.devMockEnabled = !this.isProd && configService.get<string>('ENABLE_DEV_MOCK') === 'true';
 
     this.http = axios.create({
       baseURL: 'https://api.weixin.qq.com',
@@ -51,7 +57,7 @@ export class WechatService {
    * @returns 成功返回 openid 等信息;失败抛 Error
    */
   async code2session(code: string): Promise<JsCodeSessionResponse> {
-    if (!this.isProd && code.startsWith('mock-')) {
+    if (this.devMockEnabled && code.startsWith('mock-')) {
       return this.mockResponse(code);
     }
 

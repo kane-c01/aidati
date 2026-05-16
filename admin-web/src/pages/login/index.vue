@@ -59,7 +59,7 @@
       </el-form>
 
       <p class="hint">
-        默认超管:<code>admin</code> / <code>admin123</code> — 首次登录后请到「用户管理」改密码
+        忘记账号或需要重置密码,请联系超级管理员。
       </p>
     </div>
   </div>
@@ -81,8 +81,8 @@ const route = useRoute();
 const formRef = ref<FormInstance>();
 const submitting = ref(false);
 const form = reactive({
-  username: 'admin',
-  password: 'admin123',
+  username: '',
+  password: '',
 });
 
 const rules: FormRules = {

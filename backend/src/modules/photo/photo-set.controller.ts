@@ -24,10 +24,7 @@ export class PhotoSetController {
    */
   @Post('from-pdf')
   @HttpCode(HttpStatus.CREATED)
-  async createFromPdf(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: CreatePhotoSetFromPdfDto,
-  ) {
+  async createFromPdf(@CurrentUser() user: JwtPayload, @Body() dto: CreatePhotoSetFromPdfDto) {
     return this.photoService.createSetFromPdf(BigInt(user.sub), dto, { sourceKind: 'pdf' });
   }
 

@@ -1,0 +1,56 @@
+<!--
+  用户服务协议正文(占位草案 · 上线前必须由律师审定)
+-->
+<view class="page">
+  <view class="hero">
+    <text class="title">用户服务协议</text>
+    <text class="meta">版本 {{version}} · 最后更新 {{updatedAt}}</text>
+  </view>
+
+  <view class="section">
+    <text class="h">一、协议接受</text>
+    <text class="p">您使用「考题魔盒」即表示您已阅读、理解并同意接受本协议全部条款。如不同意,请勿使用本服务。</text>
+  </view>
+
+  <view class="section">
+    <text class="h">二、账号</text>
+    <text class="li">• 您通过微信账号登录, 一个微信账号对应一个用户身份</text>
+    <text class="li">• 您应妥善保管账号, 因您泄露/转借/出借所致损失由您自行承担</text>
+    <text class="li">• 您可申请注销账号, 7 天冷静期内重新登录视为撤销</text>
+  </view>
+
+  <view class="section">
+    <text class="h">三、行为规范</text>
+    <text class="p">您承诺不在本服务内发布、上传或传播以下内容:</text>
+    <text class="li">• 违反法律法规、危害国家安全/社会稳定的内容</text>
+    <text class="li">• 淫秽、暴力、赌博、迷信等不良信息</text>
+    <text class="li">• 侵犯他人知识产权/隐私权/名誉权的内容</text>
+    <text class="li">• 商业广告、垃圾信息、恶意刷接口</text>
+  </view>
+
+  <view class="section">
+    <text class="h">四、内容与知识产权</text>
+    <text class="li">• 您上传的拍照/PDF/答题记录所有权归您所有, 您授予本服务为提供功能所必需的使用权</text>
+    <text class="li">• AI 生成的题目/解析/批改结果版权归运营方所有, 您仅获得个人学习使用的非商业授权</text>
+    <text class="li">• 您不得未经授权将 AI 生成内容用于商业培训、二次销售等</text>
+  </view>
+
+  <view class="section">
+    <text class="h">五、免责</text>
+    <text class="p">AI 生成内容仅供学习参考, 不保证完全准确, 不构成教育/医疗/法律建议。重要决策请以权威来源为准。</text>
+  </view>
+
+  <view class="section">
+    <text class="h">六、服务变更与终止</text>
+    <text class="p">我们可能因业务调整、监管要求等修改、暂停或终止本服务的部分或全部功能, 并通过小程序公告告知。</text>
+  </view>
+
+  <view class="section">
+    <text class="h">七、争议解决</text>
+    <text class="p">本协议适用中华人民共和国法律。任何争议应优先友好协商; 协商不成的, 提交运营主体所在地有管辖权的人民法院。</text>
+  </view>
+
+  <view class="footer">
+    <text class="footer-text">客服邮箱: support@yourdomain.com</text>
+  </view>
+</view>

@@ -178,6 +178,47 @@ export class ImportPdfDto {
   max_chapters?: number;
 }
 
+export class CreateBookFromPhotoSetDto {
+  @IsString()
+  @Matches(/^\d+$/)
+  photo_set_id!: string;
+
+  @IsString()
+  @MaxLength(256)
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  author?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
+
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(512)
+  cover_url?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
+  @IsIn(COPYRIGHT_OPTIONS)
+  copyright_status?: Copyright;
+}
+
+export class ImportFromPhotoSetDto {
+  @IsString()
+  @Matches(/^\d+$/)
+  photo_set_id!: string;
+}
+
 export class ListAdminBooksQuery {
   @IsOptional()
   @IsString()

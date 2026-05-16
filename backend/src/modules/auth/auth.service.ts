@@ -180,11 +180,18 @@ export class AuthService {
   }
 
   /**
-   * dev 角色快速通道
-   * 仅在非 production 启用;生产环境真实微信 code 不会以 mock- 开头
+   * dev 角色快速通道(后门)
+   * 必须满足:
+   * 1. NODE_ENV !== 'production'
+   * 2. ENABLE_DEV_MOCK === 'true'(显式开启,默认关闭)
+   *
+   * 单一 NODE_ENV 校验不够安全 —— staging / preview 等环境如果忘记设置 production,
+   * 任何人传 mock-super-xxx 就能拿到 super_admin token。
+   * 故双开关:必须本机开发者主动声明 ENABLE_DEV_MOCK=true 才允许。
    */
   private deriveDevRole(code: string): UserRole | null {
     if (process.env.NODE_ENV === 'production') return null;
+    if (process.env.ENABLE_DEV_MOCK !== 'true') return null;
     if (code.startsWith('mock-super-')) return UserRole.super_admin;
     if (code.startsWith('mock-admin-')) return UserRole.admin;
     return null;

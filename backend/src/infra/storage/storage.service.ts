@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   DeleteObjectCommand,
@@ -13,6 +13,7 @@ import * as mimeTypes from 'mime-types';
 import { nanoid } from 'nanoid';
 
 import { todayInShanghaiString } from '../../common/utils/timezone';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type UploadScene = 'photo' | 'cover' | 'pdf';
 
@@ -74,41 +75,110 @@ const SCENE_RULES: Record<UploadScene, SceneRule> = {
  * 不在 controller 直接调 S3 SDK, 业务代码全部走本服务的语义化方法
  */
 @Injectable()
-export class StorageService {
+export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
-  private readonly client: S3Client;
-  private readonly bucket: string;
-  private readonly publicBase: string;
-  private readonly provider: UploadPolicy['provider'];
-  private readonly region: string;
+  private client!: S3Client;
+  private bucket!: string;
+  private publicBase!: string;
+  private provider!: UploadPolicy['provider'];
+  private region!: string;
 
   /** 预签 URL 有效期(秒) */
   private static readonly PRESIGN_TTL_SEC = 600;
 
-  constructor(config: ConfigService) {
-    const endpoint = config.getOrThrow<string>('OSS_ENDPOINT');
-    this.region = config.get<string>('OSS_REGION', 'us-east-1');
-    const accessKey = config.getOrThrow<string>('OSS_ACCESS_KEY');
-    const secretKey = config.getOrThrow<string>('OSS_SECRET_KEY');
-    this.bucket = config.getOrThrow<string>('OSS_BUCKET');
-    this.publicBase = config.getOrThrow<string>('OSS_PUBLIC_BASE');
-    this.provider =
-      (config.get<string>('OSS_PROVIDER', 'minio') as UploadPolicy['provider']) ?? 'minio';
+  private static readonly OSS_CONFIG_KEYS = [
+    'oss_provider',
+    'oss_endpoint',
+    'oss_bucket',
+    'oss_region',
+    'oss_access_key',
+    'oss_secret_key',
+    'oss_public_base',
+  ] as const;
 
+  constructor(
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
+    this.initFromEnv();
+  }
+
+  async onModuleInit(): Promise<void> {
+    try {
+      await this.tryOverrideFromDb();
+    } catch (err) {
+      this.logger.warn(
+        `读取 system_config 中的 OSS 配置失败,使用环境变量: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  private initFromEnv(): void {
+    const endpoint = this.config.getOrThrow<string>('OSS_ENDPOINT');
+    this.region = this.config.get<string>('OSS_REGION', 'us-east-1');
+    const accessKey = this.config.getOrThrow<string>('OSS_ACCESS_KEY');
+    const secretKey = this.config.getOrThrow<string>('OSS_SECRET_KEY');
+    this.bucket = this.config.getOrThrow<string>('OSS_BUCKET');
+    this.publicBase = this.config.getOrThrow<string>('OSS_PUBLIC_BASE');
+    this.provider =
+      (this.config.get<string>('OSS_PROVIDER', 'minio') as UploadPolicy['provider']) ?? 'minio';
+
+    this.buildClient(endpoint, this.region, accessKey, secretKey);
+  }
+
+  private async tryOverrideFromDb(): Promise<void> {
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { keyName: { in: [...StorageService.OSS_CONFIG_KEYS] } },
+    });
+    if (rows.length === 0) return;
+
+    const map = new Map(rows.map((r) => [r.keyName, r.value as string]));
+    const dbEndpoint = this.nonEmpty(map.get('oss_endpoint'));
+    const dbAccessKey = this.nonEmpty(map.get('oss_access_key'));
+    const dbSecretKey = this.nonEmpty(map.get('oss_secret_key'));
+
+    if (!dbEndpoint && !dbAccessKey) return;
+
+    const endpoint = dbEndpoint ?? this.config.getOrThrow<string>('OSS_ENDPOINT');
+    const accessKey = dbAccessKey ?? this.config.getOrThrow<string>('OSS_ACCESS_KEY');
+    const secretKey = dbSecretKey ?? this.config.getOrThrow<string>('OSS_SECRET_KEY');
+    this.region = this.nonEmpty(map.get('oss_region')) ?? this.region;
+    this.bucket = this.nonEmpty(map.get('oss_bucket')) ?? this.bucket;
+    this.publicBase = this.nonEmpty(map.get('oss_public_base')) ?? this.publicBase;
+    this.provider =
+      (this.nonEmpty(map.get('oss_provider')) as UploadPolicy['provider']) ?? this.provider;
+
+    this.buildClient(endpoint, this.region, accessKey, secretKey);
+    this.logger.log(
+      `Storage reloaded from DB: provider=${this.provider} bucket=${this.bucket} endpoint=${endpoint}`,
+    );
+  }
+
+  private buildClient(
+    endpoint: string,
+    region: string,
+    accessKey: string,
+    secretKey: string,
+  ): void {
     this.client = new S3Client({
       endpoint,
-      region: this.region,
+      region,
       credentials: {
         accessKeyId: accessKey,
         secretAccessKey: secretKey,
       },
-      // MinIO 必须 path-style;腾讯云 COS S3 兼容也支持 path-style
       forcePathStyle: true,
     });
 
     this.logger.log(
       `Storage initialized provider=${this.provider} bucket=${this.bucket} endpoint=${endpoint}`,
     );
+  }
+
+  private nonEmpty(v: string | undefined | null): string | undefined {
+    if (!v || typeof v !== 'string') return undefined;
+    const trimmed = v.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
   }
 
   // ===== 公开 API =====

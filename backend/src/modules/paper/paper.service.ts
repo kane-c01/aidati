@@ -676,9 +676,7 @@ export class PaperService {
           await this.mistakes.recordCorrect({ userId, question: q });
         }
       }
-      this.logger.log(
-        `submit.objective_done paper=${paper.id} mistakes_added=${mistakeCount}`,
-      );
+      this.logger.log(`submit.objective_done paper=${paper.id} mistakes_added=${mistakeCount}`);
     } catch (err) {
       // 错题入库失败不阻塞结果返回, 只记日志便于排查
       this.logger.error(

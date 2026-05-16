@@ -18,7 +18,9 @@ import type { JwtPayload } from '../../common/types/auth.types';
 
 import {
   CreateBookDto,
+  CreateBookFromPhotoSetDto,
   ImportChaptersDto,
+  ImportFromPhotoSetDto,
   ImportPdfDto,
   ListAdminBooksQuery,
   UpdateBookDto,
@@ -49,6 +51,16 @@ export class AdminBookController {
   @HttpCode(HttpStatus.CREATED)
   async create(@CurrentUser() user: JwtPayload, @Body() dto: CreateBookDto) {
     return this.service.create(BigInt(user.sub), dto);
+  }
+
+  /**
+   * POST /v1/admin/books/from-photo-set —— 从已校对拍照集创建书籍
+   * 必须声明在 :id 路由之前,避免 NestJS 把 'from-photo-set' 当作 id
+   */
+  @Post('from-photo-set')
+  @HttpCode(HttpStatus.CREATED)
+  async fromPhotoSet(@CurrentUser() user: JwtPayload, @Body() dto: CreateBookFromPhotoSetDto) {
+    return this.service.createFromPhotoSet(BigInt(user.sub), dto);
   }
 
   @Patch(':id')
@@ -118,5 +130,19 @@ export class AdminBookController {
       dto?.pdf_url ?? null,
       dto?.max_chapters,
     );
+  }
+
+  /**
+   * POST /v1/admin/books/:id/import-from-photo-set —— 将拍照集内容导入已有书籍的章节
+   * 读取 photo_set.ocr_text → LLM 切章 → 替换当前 chapters
+   */
+  @Post(':id/import-from-photo-set')
+  @HttpCode(HttpStatus.OK)
+  async importFromPhotoSet(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() dto: ImportFromPhotoSetDto,
+  ) {
+    return this.service.importFromPhotoSet(BigInt(user.sub), id, BigInt(dto.photo_set_id));
   }
 }

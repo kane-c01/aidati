@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { type Book, type Chapter, BookSource, type Prisma } from '@prisma/client';
+import { type Book, BookImportStatus, BookSource, type Chapter, type Prisma } from '@prisma/client';
 
 import {
   BusinessException,
@@ -11,6 +11,7 @@ import { PrismaService } from '../../../infra/prisma/prisma.service';
 
 import type {
   CreateBookDto,
+  CreateBookFromPhotoSetDto,
   ImportChaptersDto,
   ListAdminBooksQuery,
   UpdateBookDto,
@@ -353,6 +354,199 @@ export class AdminBookService {
       pages: doc.pages.length,
       chapter_hints: doc.chapter_hints?.length ?? 0,
     };
+  }
+
+  // ===== 从拍照集创建书籍 =====
+
+  async createFromPhotoSet(
+    adminId: bigint,
+    dto: CreateBookFromPhotoSetDto,
+  ): Promise<AdminBookView & { import_status: string }> {
+    const setId = BigInt(dto.photo_set_id);
+    const set = await this.prisma.photoSet.findUnique({ where: { id: setId } });
+    if (!set) throw new NotFoundBusinessException('拍照集不存在');
+
+    const ocrText = (set.ocrText ?? '').trim();
+    if (!ocrText) {
+      throw new BusinessException(
+        ERROR_CODES.PARAM_INVALID,
+        '该拍照集尚未完成 OCR 识别, 请先进行识别或校对',
+      );
+    }
+
+    const book = await this.prisma.book.create({
+      data: {
+        title: dto.title,
+        author: dto.author ?? null,
+        description: dto.description ?? `来自拍照集 #${dto.photo_set_id} 的 AI 整理`,
+        coverUrl: dto.cover_url ?? null,
+        pdfUrl: null,
+        tags: (dto.tags ?? ['拍照']) as Prisma.InputJsonValue,
+        source: BookSource.admin,
+        copyrightStatus: dto.copyright_status ?? null,
+        status: 1,
+        isRecommended: 0,
+        sortWeight: 0,
+        createdBy: adminId,
+        linkedPhotoSetId: setId,
+        importStatus: BookImportStatus.splitting,
+        importProgress: 10,
+        importUpdatedAt: new Date(),
+      },
+    });
+
+    await this.adminLog.record({
+      adminId,
+      action: 'book.create_from_photo_set',
+      targetType: 'book',
+      targetId: book.id,
+      meta: { photo_set_id: dto.photo_set_id, title: dto.title },
+    });
+
+    this.schedulePhotoSetChapterSplit(adminId, book.id, setId, dto.title);
+
+    return { ...this.toView(book, 0), import_status: book.importStatus };
+  }
+
+  async importFromPhotoSet(
+    adminId: bigint,
+    bookId: bigint,
+    photoSetId: bigint,
+  ): Promise<{ imported: number; total: number }> {
+    const book = await this.findOrThrow(bookId);
+    const set = await this.prisma.photoSet.findUnique({ where: { id: photoSetId } });
+    if (!set) throw new NotFoundBusinessException('拍照集不存在');
+
+    const ocrText = (set.ocrText ?? '').trim();
+    if (!ocrText) {
+      throw new BusinessException(
+        ERROR_CODES.PARAM_INVALID,
+        '该拍照集尚未完成 OCR 识别, 请先进行识别或校对',
+      );
+    }
+
+    const split = await this.aiService.splitChapters({
+      markdown: ocrText,
+      chapter_hints: [],
+      book_title: book.title,
+    });
+
+    if (!split.chapters?.length) {
+      throw new BusinessException(ERROR_CODES.LLM_UNAVAILABLE, 'AI 未能从拍照集文本中切出任何章节');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.chapter.deleteMany({ where: { bookId } });
+      await tx.chapter.createMany({
+        data: split.chapters.map((c, idx) => ({
+          bookId,
+          orderNo: c.order_no || idx + 1,
+          title: (c.title ?? `第 ${idx + 1} 章`).slice(0, 200),
+          contentSummary: c.content_summary ?? null,
+          contentFull: c.content_full ?? null,
+        })),
+      });
+      await tx.book.update({
+        where: { id: bookId },
+        data: { linkedPhotoSetId: photoSetId },
+      });
+    });
+
+    await this.adminLog.record({
+      adminId,
+      action: 'book.import_from_photo_set',
+      targetType: 'book',
+      targetId: bookId,
+      meta: {
+        photo_set_id: photoSetId.toString(),
+        chapters: split.chapters.length,
+      },
+    });
+
+    const total = await this.prisma.chapter.count({ where: { bookId } });
+    return { imported: split.chapters.length, total };
+  }
+
+  private schedulePhotoSetChapterSplit(
+    adminId: bigint,
+    bookId: bigint,
+    photoSetId: bigint,
+    bookTitle: string,
+  ): void {
+    setImmediate(() => {
+      this.runPhotoSetChapterSplit(adminId, bookId, photoSetId, bookTitle).catch((err) => {
+        this.logger.error(
+          `runPhotoSetChapterSplit 异常 book=${bookId} err=${(err as Error).message}`,
+        );
+      });
+    });
+  }
+
+  private async runPhotoSetChapterSplit(
+    _adminId: bigint,
+    bookId: bigint,
+    photoSetId: bigint,
+    bookTitle: string,
+  ): Promise<void> {
+    try {
+      const set = await this.prisma.photoSet.findUnique({ where: { id: photoSetId } });
+      if (!set) throw new Error('拍照集已不存在');
+
+      const markdown = (set.ocrText ?? '').trim();
+      if (!markdown) throw new Error('拍照集无 OCR 文本');
+
+      await this.prisma.book.update({
+        where: { id: bookId },
+        data: { importProgress: 40, importUpdatedAt: new Date() },
+      });
+
+      const split = await this.aiService.splitChapters({
+        markdown,
+        chapter_hints: [],
+        book_title: bookTitle,
+      });
+
+      if (!split.chapters?.length) throw new Error('AI 未能切出任何章节');
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.chapter.deleteMany({ where: { bookId } });
+        await tx.chapter.createMany({
+          data: split.chapters.map((c, idx) => ({
+            bookId,
+            orderNo: c.order_no || idx + 1,
+            title: (c.title ?? `第 ${idx + 1} 章`).slice(0, 200),
+            contentSummary: c.content_summary ?? null,
+            contentFull: c.content_full ?? null,
+          })),
+        });
+        await tx.book.update({
+          where: { id: bookId },
+          data: {
+            importStatus: BookImportStatus.ready,
+            importProgress: 100,
+            importError: null,
+            importUpdatedAt: new Date(),
+          },
+        });
+      });
+
+      this.logger.log(
+        `runPhotoSetChapterSplit ok book=${bookId} chapters=${split.chapters.length}`,
+      );
+    } catch (err) {
+      const msg = (err as Error)?.message ?? '未知错误';
+      this.logger.warn(`runPhotoSetChapterSplit 失败 book=${bookId} err=${msg}`);
+      await this.prisma.book
+        .update({
+          where: { id: bookId },
+          data: {
+            importStatus: BookImportStatus.failed,
+            importError: msg.slice(0, 1000),
+            importUpdatedAt: new Date(),
+          },
+        })
+        .catch(() => undefined);
+    }
   }
 
   // ===== 内部 =====

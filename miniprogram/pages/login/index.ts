@@ -37,12 +37,11 @@ Page({
   onOpenPrivacy(e: WechatMiniprogram.BaseEvent) {
     const key = e.currentTarget.dataset.key as string;
     track('login_open_privacy', { key });
-    wx.showModal({
-      title: key === 'user' ? '《用户协议》' : '《隐私政策》',
-      content: '正式协议文本将在 settings 页打开,这里是占位说明。',
-      showCancel: false,
-      confirmText: '我知道了',
-    });
+    const url =
+      key === 'user'
+        ? '/pages/agreement/terms/index'
+        : '/pages/agreement/privacy/index';
+    wx.navigateTo({ url });
   },
 
   async onLogin() {

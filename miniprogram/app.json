@@ -19,7 +19,9 @@
     "pages/book-upload/index",
     "pages/book-reader/index",
     "pages/settings/index",
-    "pages/feedback/index"
+    "pages/feedback/index",
+    "pages/agreement/privacy/index",
+    "pages/agreement/terms/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#FAFAF7",

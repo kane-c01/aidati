@@ -1,6 +1,7 @@
 import { type MiddlewareConsumer, Module, type NestModule, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -42,6 +43,16 @@ import { UserModule } from './modules/user/user.module';
       isGlobal: true,
       envFilePath: ['.env', '.env.development'],
     }),
+    // 全局限流(05 §7.5):
+    // - short: 1s 内 30 次,挡住爆破/扫描
+    // - medium: 10s 内 80 次,挡住自动化脚本
+    // - long: 60s 内 300 次,挡住慢速试探
+    // 单个接口可用 @Throttle / @SkipThrottle 覆盖
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 1_000, limit: 30 },
+      { name: 'medium', ttl: 10_000, limit: 80 },
+      { name: 'long', ttl: 60_000, limit: 300 },
+    ]),
     PrismaModule,
     RedisModule,
     StorageModule,
@@ -75,8 +86,12 @@ import { UserModule } from './modules/user/user.module';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
-    // 守卫顺序:JwtAuth → Roles
-    // JwtAuthGuard 把 user 注入 req, RolesGuard 才能读
+    // 守卫顺序:Throttler → JwtAuth → Roles
+    // Throttler 在最外层,先把暴力请求挡掉,省 JWT 校验 CPU
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

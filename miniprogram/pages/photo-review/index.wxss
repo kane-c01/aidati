@@ -1,8 +1,12 @@
 .pr {
-  padding: var(--space-lg) var(--space-lg) 200rpx;
+  min-height: 100vh;
+  background-color: var(--color-bg-page);
+  padding: var(--space-lg) var(--space-lg)
+    calc(200rpx + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  box-sizing: border-box;
 }
 
 .pr__loading {
@@ -126,7 +130,7 @@
 
 .pr__item-img {
   width: 100%;
-  max-height: 480rpx;
+  height: 360rpx;
   border-radius: var(--radius-sm);
   background-color: var(--color-border-light);
   margin-bottom: var(--space-sm);
@@ -140,6 +144,8 @@
 .pr__item-textarea {
   width: 100%;
   min-height: 120rpx;
+  /* 文本过长时不再无限撑高卡片, 内部滚动即可 */
+  max-height: 560rpx;
   padding: var(--space-sm);
   border: 1rpx solid var(--color-border);
   border-radius: var(--radius-sm);

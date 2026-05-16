@@ -99,15 +99,11 @@ export class AiService {
    *  - timeout 拉到 5 分钟(扫描版 200 页约 2 分钟)
    */
   async pdfToImages(req: PdfToImagesReqDto): Promise<PdfToImagesResDto> {
-    return this.call<PdfToImagesResDto>(
-      '/v1/extract/pdf-to-images',
-      req,
-      {
-        timeout: 300_000,
-        maxContentLength: 200 * 1024 * 1024,
-        maxBodyLength: 200 * 1024 * 1024,
-      },
-    );
+    return this.call<PdfToImagesResDto>('/v1/extract/pdf-to-images', req, {
+      timeout: 300_000,
+      maxContentLength: 200 * 1024 * 1024,
+      maxBodyLength: 200 * 1024 * 1024,
+    });
   }
 
   async health(): Promise<boolean> {

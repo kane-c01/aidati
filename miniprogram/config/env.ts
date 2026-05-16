@@ -41,10 +41,11 @@ const ENVS: Record<typeof ENV_VERSION, EnvConfig> = {
     DEBUG: true,
   },
   trial: {
+    // 体验版必须能验真实微信登录与真实合规审核, DEBUG=false → 不再走 mock-code 后门
     API_BASE: 'https://api-test.yourdomain.com/v1',
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0-trial',
-    DEBUG: true,
+    DEBUG: false,
   },
   release: {
     API_BASE: 'https://api.yourdomain.com/v1',

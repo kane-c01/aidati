@@ -256,17 +256,31 @@
             >
               章节
             </el-button>
-            <el-button
-              text
-              type="primary"
+            <el-dropdown
+              trigger="click"
               size="small"
-              :disabled="!row.pdf_url"
-              :loading="!!pdfImporting[row.id]"
-              :title="row.pdf_url ? '从 PDF 自动抽章节' : '请先在编辑里填 pdf_url'"
-              @click="onImportPdf(row)"
             >
-              PDF 入章
-            </el-button>
+              <el-button
+                text
+                type="primary"
+                size="small"
+              >
+                AI 入章 ▾
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    :disabled="!row.pdf_url || !!pdfImporting[row.id]"
+                    @click="onImportPdf(row)"
+                  >
+                    从 PDF 抽取章节
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="openPhotoSetImport(row)">
+                    从拍照集导入章节
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <el-button
               v-if="!row.is_recommended"
               text
@@ -340,6 +354,59 @@
       v-model="previewVisible"
       :book-id="previewBookId"
     />
+
+    <!-- 从拍照集导入章节 -->
+    <el-dialog
+      v-model="psImportVisible"
+      title="从拍照集导入章节"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        class="mb-12"
+      >
+        导入将替换《{{ psImportTarget?.title }}》的全部现有章节,不可恢复
+      </el-alert>
+      <el-form label-width="80px">
+        <el-form-item label="拍照集">
+          <el-select
+            v-model="psImportSetId"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="搜索拍照集(名称/用户)"
+            :remote-method="searchPsForImport"
+            :loading="psSearchLoading"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="ps in psSearchResults"
+              :key="ps.id"
+              :label="`${ps.name || '#' + ps.id} (${ps.user_nickname || '—'}, ${ps.total_pages}张)`"
+              :value="ps.id"
+              :disabled="ps.ocr_status !== 'done'"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="psImportVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="psImporting"
+          :disabled="!psImportSetId"
+          @click="onPsImport"
+        >
+          开始导入
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -349,8 +416,8 @@ import dayjs from 'dayjs';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
-import { bookApi } from '@/api/admin';
-import type { AdminBookView } from '@/types/api';
+import { bookApi, photoSetApi } from '@/api/admin';
+import type { AdminBookView, AdminPhotoSetView } from '@/types/api';
 
 import BookEditDialog from './_BookEditDialog.vue';
 import BookPreviewDrawer from './_BookPreviewDrawer.vue';
@@ -497,6 +564,52 @@ async function remove(row: AdminBookView): Promise<void> {
 function onSaved(): void {
   editVisible.value = false;
   void loadList();
+}
+
+// ===== 拍照集导入章节 =====
+const psImportVisible = ref(false);
+const psImportTarget = ref<AdminBookView | null>(null);
+const psImportSetId = ref('');
+const psSearchLoading = ref(false);
+const psSearchResults = ref<AdminPhotoSetView[]>([]);
+const psImporting = ref(false);
+
+function openPhotoSetImport(row: AdminBookView): void {
+  psImportTarget.value = row;
+  psImportSetId.value = '';
+  psImportVisible.value = true;
+  void searchPsForImport('');
+}
+
+async function searchPsForImport(query: string): Promise<void> {
+  psSearchLoading.value = true;
+  try {
+    const res = await photoSetApi.list({
+      keyword: query || undefined,
+      page: 1,
+      page_size: 20,
+    });
+    psSearchResults.value = res.list;
+  } catch {
+    psSearchResults.value = [];
+  } finally {
+    psSearchLoading.value = false;
+  }
+}
+
+async function onPsImport(): Promise<void> {
+  if (!psImportTarget.value || !psImportSetId.value) return;
+  psImporting.value = true;
+  try {
+    const r = await bookApi.importFromPhotoSet(psImportTarget.value.id, psImportSetId.value);
+    ElMessage.success(`已从拍照集导入 ${r.imported} 章`);
+    psImportVisible.value = false;
+    void loadList();
+  } catch (err) {
+    ElMessage.error((err as Error).message || '导入失败');
+  } finally {
+    psImporting.value = false;
+  }
 }
 
 function format(ts: string): string {

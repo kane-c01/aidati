@@ -61,10 +61,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       // 5xx 未知异常: 给前端泛化文案, 详细错误仅入日志, 防止 SQL/表名/堆栈泄露
       message = ERROR_MESSAGES[ERROR_CODES.DB_ERROR];
-      this.logger.error(
-        `${request.method} ${request.url} - ${exception.message}`,
-        exception.stack,
-      );
+      this.logger.error(`${request.method} ${request.url} - ${exception.message}`, exception.stack);
     }
 
     if (httpStatus >= 400 && httpStatus < 500 && exception instanceof BusinessException) {

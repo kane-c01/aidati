@@ -143,6 +143,38 @@ export interface UpdateBookPayload extends Partial<CreateBookPayload> {
   sort_weight?: number;
 }
 
+export interface CreateBookFromPhotoSetPayload {
+  photo_set_id: string;
+  title: string;
+  author?: string;
+  description?: string;
+  cover_url?: string;
+  tags?: string[];
+  copyright_status?: 'public_domain' | 'licensed' | 'user_claimed' | 'unknown';
+}
+
+export type BookImportStatus = 'none' | 'preparing' | 'extracting' | 'splitting' | 'ready' | 'failed';
+
+export interface AdminBookViewExt extends AdminBookView {
+  import_status?: BookImportStatus;
+  import_progress?: number;
+  import_error?: string | null;
+  linked_photo_set_id?: string | null;
+}
+
+export interface UploadPolicyResponse {
+  provider: string;
+  method: string;
+  bucket: string;
+  region: string;
+  put_url: string;
+  key: string;
+  expires_at: string;
+  key_prefix: string;
+  max_size_mb: number;
+  public_base_url: string;
+}
+
 export interface ChapterImportItem {
   order_no: number;
   title: string;
@@ -195,10 +227,13 @@ export interface ModerationLogView {
 
 export interface SystemConfigView {
   key: string;
+  /** 敏感字段 (is_secret=true) 时, value 是 `••••••••<last4>` 形式的脱敏字串 */
   value: unknown;
   description: string | null;
   updated_by: string | null;
   updated_at: string;
+  /** 后端标注: 该字段是否属于敏感凭证(API Key / Secret / Token / Password) */
+  is_secret?: boolean;
 }
 
 // ===== 拍照集(用户上传素材)=====

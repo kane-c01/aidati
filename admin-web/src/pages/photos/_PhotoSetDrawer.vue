@@ -196,6 +196,15 @@
           删除整个拍照集
         </el-button>
         <el-button
+          type="success"
+          plain
+          :disabled="detail?.ocr_status !== 'done'"
+          :title="detail?.ocr_status !== 'done' ? 'OCR 未完成，请先完成识别和校对' : '将校对完成的拍照集保存为书籍'"
+          @click="showSaveAsBook = true"
+        >
+          保存为书籍
+        </el-button>
+        <el-button
           type="primary"
           :loading="batchSaving"
           :disabled="!hasDirty"
@@ -204,15 +213,77 @@
           一键保存全部({{ dirtyCount }})
         </el-button>
       </div>
+
+      <!-- 保存为书籍弹窗 -->
+      <el-dialog
+        v-model="showSaveAsBook"
+        title="将拍照集保存为书籍"
+        width="480px"
+        append-to-body
+        :close-on-click-modal="false"
+      >
+        <el-form
+          ref="bookFormRef"
+          :model="bookForm"
+          :rules="bookFormRules"
+          label-width="80px"
+        >
+          <el-form-item
+            label="书名"
+            prop="title"
+          >
+            <el-input
+              v-model="bookForm.title"
+              maxlength="120"
+              placeholder="给这本书起个名字"
+            />
+          </el-form-item>
+          <el-form-item label="作者">
+            <el-input
+              v-model="bookForm.author"
+              maxlength="64"
+              placeholder="可选"
+            />
+          </el-form-item>
+          <el-form-item label="简介">
+            <el-input
+              v-model="bookForm.description"
+              type="textarea"
+              :rows="3"
+              maxlength="2000"
+              placeholder="可选"
+            />
+          </el-form-item>
+        </el-form>
+        <el-alert
+          type="info"
+          :closable="false"
+          show-icon
+        >
+          保存后 AI 将自动根据 OCR 文本拆分章节,过程约 1~2 分钟
+        </el-alert>
+        <template #footer>
+          <el-button @click="showSaveAsBook = false">
+            取消
+          </el-button>
+          <el-button
+            type="primary"
+            :loading="savingAsBook"
+            @click="onSaveAsBook"
+          >
+            确认保存
+          </el-button>
+        </template>
+      </el-dialog>
     </template>
   </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 
-import { photoSetApi } from '@/api/admin';
+import { bookApi, photoSetApi } from '@/api/admin';
 import type {
   AdminPhotoSetDetail,
   AdminPhotoView,
@@ -415,6 +486,41 @@ function kindLabel(k: PhotoRegionKind): string {
   if (k === 'chart') return '图表';
   if (k === 'formula') return '公式';
   return '表格';
+}
+
+// ===== 保存为书籍 =====
+const showSaveAsBook = ref(false);
+const savingAsBook = ref(false);
+const bookFormRef = ref<FormInstance>();
+const bookForm = reactive({ title: '', author: '', description: '' });
+const bookFormRules: FormRules = {
+  title: [{ required: true, message: '书名必填', trigger: 'blur' }],
+};
+
+async function onSaveAsBook(): Promise<void> {
+  if (!bookFormRef.value || !detail.value) return;
+  const ok = await bookFormRef.value.validate().catch(() => false);
+  if (!ok) return;
+
+  savingAsBook.value = true;
+  try {
+    await bookApi.fromPhotoSet({
+      photo_set_id: detail.value.id,
+      title: bookForm.title,
+      author: bookForm.author || undefined,
+      description: bookForm.description || undefined,
+    });
+    ElMessage.success('书籍已创建,AI 正在拆分章节,请前往书籍管理查看');
+    showSaveAsBook.value = false;
+    bookForm.title = '';
+    bookForm.author = '';
+    bookForm.description = '';
+    emit('saved');
+  } catch (err) {
+    ElMessage.error((err as Error).message || '保存失败');
+  } finally {
+    savingAsBook.value = false;
+  }
 }
 
 function formatTime(s: string | null | undefined): string {
