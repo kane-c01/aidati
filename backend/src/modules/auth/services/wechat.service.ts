@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { type AxiosInstance } from 'axios';
 
+import { ERROR_CODES } from '../../../common/constants/error-codes';
+import { BusinessException } from '../../../common/exceptions/business.exception';
 import { sha256 } from '../../../common/utils/sha256';
 
 /**
@@ -54,7 +56,7 @@ export class WechatService {
    * 用临时 code 换 openid + unionid + session_key
    * 文档:https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html
    *
-   * @returns 成功返回 openid 等信息;失败抛 Error
+   * @returns 成功返回 openid 等信息;失败抛 BusinessException
    */
   async code2session(code: string): Promise<JsCodeSessionResponse> {
     if (this.devMockEnabled && code.startsWith('mock-')) {
@@ -62,29 +64,54 @@ export class WechatService {
     }
 
     if (!this.appId || !this.appSecret) {
-      throw new Error('微信 AppID/Secret 未配置, 无法调用 jscode2session');
+      this.logger.error('jscode2session 跳过: WECHAT_APPID/WECHAT_SECRET 未配置');
+      throw new BusinessException(
+        ERROR_CODES.WECHAT_LOGIN_FAILED,
+        '登录服务未正确配置,请联系管理员',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
-    const { data } = await this.http.get<JsCodeSessionResponse | WeChatErrorResponse>(
-      '/sns/jscode2session',
-      {
-        params: {
-          appid: this.appId,
-          secret: this.appSecret,
-          js_code: code,
-          grant_type: 'authorization_code',
+    let data: JsCodeSessionResponse | WeChatErrorResponse;
+    try {
+      ({ data } = await this.http.get<JsCodeSessionResponse | WeChatErrorResponse>(
+        '/sns/jscode2session',
+        {
+          params: {
+            appid: this.appId,
+            secret: this.appSecret,
+            js_code: code,
+            grant_type: 'authorization_code',
+          },
         },
-      },
-    );
+      ));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`jscode2session 网络异常: ${msg}`);
+      throw new BusinessException(
+        ERROR_CODES.WECHAT_LOGIN_FAILED,
+        '无法连接微信登录服务,请稍后重试',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
 
     if ('errcode' in data && data.errcode !== 0) {
       this.logger.warn(`jscode2session 失败 errcode=${data.errcode} errmsg=${data.errmsg}`);
-      throw new Error(`微信登录失败: ${data.errmsg}`);
+      throw new BusinessException(
+        ERROR_CODES.WECHAT_LOGIN_FAILED,
+        `微信登录失败(${data.errcode}),请重新打开小程序再试`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const ok = data as JsCodeSessionResponse;
     if (!ok.openid) {
-      throw new Error('微信返回数据缺少 openid');
+      this.logger.warn('jscode2session 返回缺少 openid');
+      throw new BusinessException(
+        ERROR_CODES.WECHAT_LOGIN_FAILED,
+        undefined,
+        HttpStatus.BAD_GATEWAY,
+      );
     }
 
     return ok;

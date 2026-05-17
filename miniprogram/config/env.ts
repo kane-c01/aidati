@@ -10,12 +10,15 @@
  */
 
 /**
- * 仅 develop 生效: 后端基础地址的主机部分(不含端口)。
- *
- * - 只在开发者工具里跑: `localhost`
- * - 真机扫「预览」二维码: **必须改成电脑的局域网 IPv4**(如 `192.168.1.8`), 扫完码点一次「编译」再试;
- *   手机里 `localhost` 指向手机自己, 请求不到你电脑上的 Nest。
- * - 电脑与手机需同一 Wi‑Fi; 本仓库后端默认 `HOST=0.0.0.0` 已可局域网访问。
+ * develop 是否直连线上 API（与 trial/release 同域）。
+ * - `true` : 开发者工具 / 预览 / 真机调试都请求 `https://dati.orolink.cn/v1`（需在小程序后台配置 request 合法域名）
+ * - `false`: 使用下方 `DEV_API_HOST` 的本地 Nest（如 `http://192.168.x.x:3000/v1`）
+ */
+const DEVELOP_USE_ONLINE_API = true;
+
+/**
+ * 仅 develop 且 `DEVELOP_USE_ONLINE_API === false` 时生效: 本机后端主机(不含端口)。
+ * 真机预览勿用 `localhost`，应填电脑局域网 IPv4。
  */
 const DEV_API_HOST = 'localhost';
 
@@ -35,20 +38,23 @@ interface EnvConfig {
 
 const ENVS: Record<typeof ENV_VERSION, EnvConfig> = {
   develop: {
-    API_BASE: `http://${DEV_API_HOST}:3000/v1`,
+    API_BASE: DEVELOP_USE_ONLINE_API
+      ? 'https://dati.orolink.cn/v1'
+      : `http://${DEV_API_HOST}:3000/v1`,
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0-dev',
     DEBUG: true,
   },
   trial: {
     // 体验版必须能验真实微信登录与真实合规审核, DEBUG=false → 不再走 mock-code 后门
-    API_BASE: 'https://api-test.yourdomain.com/v1',
+    // 与线上同域 Nginx 反代 `/v1`；若有独立测试域可改用 https://xxx/v1
+    API_BASE: 'https://dati.orolink.cn/v1',
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0-trial',
     DEBUG: false,
   },
   release: {
-    API_BASE: 'https://api.yourdomain.com/v1',
+    API_BASE: 'https://dati.orolink.cn/v1',
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0',
     DEBUG: false,

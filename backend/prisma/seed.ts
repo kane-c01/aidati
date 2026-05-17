@@ -9,7 +9,7 @@
  * 也可在 prisma migrate reset 时自动跑(由 package.json prisma.seed 配置)
  *
  * Seed 内容:
- * 1. system_config 13 项默认配置
+ * 1. system_config 默认配置(含 OSS 等需在后台可编辑项, 见 SYSTEM_CONFIGS)
  * 2. 默认超级管理员 admin
  *    - 密码: 优先取环境变量 ADMIN_DEFAULT_PASSWORD;
  *           未设置则随机生成 24 位强密码,并打印到 stdout (仅打印一次, 不入库明文)
@@ -97,6 +97,42 @@ const SYSTEM_CONFIGS: ConfigItem[] = [
     key: 'minor_mode_window',
     value: { start: '06:00', end: '22:00' },
     description: '未成年人模式可用时段(本地时区), PRD §7.5.2',
+  },
+  // OSS / COS: 与 admin 配置页、StorageService.OSS_CONFIG_KEYS 对齐; 留空则 onModuleInit 仍走环境变量
+  {
+    key: 'oss_provider',
+    value: 'minio',
+    description: '对象存储提供商: minio | tencent_cos | aliyun_oss',
+  },
+  {
+    key: 'oss_endpoint',
+    value: '',
+    description: 'S3 兼容 Endpoint(腾讯云 COS 为 https://cos.<region>.myqcloud.com)',
+  },
+  {
+    key: 'oss_bucket',
+    value: '',
+    description: '存储桶名称',
+  },
+  {
+    key: 'oss_region',
+    value: '',
+    description: '区域, 如 ap-guangzhou',
+  },
+  {
+    key: 'oss_access_key',
+    value: '',
+    description: '访问密钥 ID(Secret 类, 列表接口脱敏)',
+  },
+  {
+    key: 'oss_secret_key',
+    value: '',
+    description: '访问密钥 Secret(Secret 类, 列表接口脱敏)',
+  },
+  {
+    key: 'oss_public_base',
+    value: '',
+    description: '公开访问 URL 基址(末尾不要斜杠), 用于拼接文件直链',
   },
 ];
 

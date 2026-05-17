@@ -21,6 +21,8 @@ export const ERROR_CODES = {
   TOKEN_INVALID: 20001,
   USER_BANNED: 20002,
   USER_CANCELED: 20003,
+  /** jscode2session 失败 / 未配置 AppSecret 等 */
+  WECHAT_LOGIN_FAILED: 20004,
   PERMISSION_DENIED: 20005,
 
   // LLM / 出题 / 配额
@@ -52,6 +54,7 @@ export const ERROR_MESSAGES: Record<number, string> = {
   [ERROR_CODES.TOKEN_INVALID]: '登录已过期,请重新登录',
   [ERROR_CODES.USER_BANNED]: '账号已被封禁',
   [ERROR_CODES.USER_CANCELED]: '账号已注销',
+  [ERROR_CODES.WECHAT_LOGIN_FAILED]: '微信登录失败,请稍后重试或重新打开小程序',
   [ERROR_CODES.PERMISSION_DENIED]: '权限不足',
   [ERROR_CODES.QUOTA_EXCEEDED]: '今日出题次数已用尽,请明天再来',
   [ERROR_CODES.LLM_UNAVAILABLE]: 'AI 繁忙,请稍后再试',
