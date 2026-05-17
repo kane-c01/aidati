@@ -34,6 +34,11 @@ interface EnvConfig {
   CLIENT_VERSION: string;
   /** 是否调试模式(开发版强制 true) */
   DEBUG: boolean;
+  /**
+   * 是否用本地 mock-* code 走后端 ENABLE_DEV_MOCK 短路。
+   * develop 且连本地 Nest 时为 true；develop 已连线上 API 或体验/正式版均为 false，避免 mock 打到正式 jscode2session。
+   */
+  useMockWxCode: boolean;
 }
 
 const ENVS: Record<typeof ENV_VERSION, EnvConfig> = {
@@ -44,6 +49,7 @@ const ENVS: Record<typeof ENV_VERSION, EnvConfig> = {
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0-dev',
     DEBUG: true,
+    useMockWxCode: !DEVELOP_USE_ONLINE_API,
   },
   trial: {
     // 体验版必须能验真实微信登录与真实合规审核, DEBUG=false → 不再走 mock-code 后门
@@ -52,12 +58,14 @@ const ENVS: Record<typeof ENV_VERSION, EnvConfig> = {
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0-trial',
     DEBUG: false,
+    useMockWxCode: false,
   },
   release: {
     API_BASE: 'https://dati.orolink.cn/v1',
     PRIVACY_VERSION: 'v1.0',
     CLIENT_VERSION: '1.0.0',
     DEBUG: false,
+    useMockWxCode: false,
   },
 };
 

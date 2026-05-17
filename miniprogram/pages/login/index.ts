@@ -3,7 +3,7 @@
  *
  * - 微信一键登录(wx.login → POST /v1/auth/wechat-login)
  * - 协议必须勾选才能点登录(disabled 灰显)
- * - dev 环境下 wx.login 失败时 fallback 用 mock-001 code(后端 M1 支持)
+ * - 仅 env.useMockWxCode 时走 mock-* code（本机 Nest + ENABLE_DEV_MOCK）；连线上 API 时用 wx.login 真 code
  * - 登录成功:首次登录 → onboarding;否则 → home
  */
 
@@ -122,9 +122,7 @@ Page({
 });
 
 function getWxCode(): Promise<string> {
-  // dev 环境强制走 mock-* code, 后端 wechat.service 已支持 mock-* 短路;
-  // 真机 / 体验版 / 正式版才走真正的 wx.login -> jscode2session
-  if (env.DEBUG) {
+  if (env.useMockWxCode) {
     const id = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
     return Promise.resolve(`mock-${id}`);
   }
