@@ -15,6 +15,16 @@ from app.adapters.base import LLMProvider, LLMResult
 logger = structlog.get_logger()
 
 
+def _effective_api_key(raw: str) -> tuple[str, bool]:
+    """去掉空白；把仓库/样例占位符视作未配置(避免带着 __xxx__ 去调 DeepSeek 再层层失败落到 mock)。 """
+    key = (raw or "").strip()
+    if not key:
+        return "", False
+    if key.startswith("__") and key.endswith("__"):
+        return "", False
+    return key, True
+
+
 class OpenAICompatProvider(LLMProvider):
     """通用 OpenAI 兼容 provider"""
 
@@ -31,14 +41,15 @@ class OpenAICompatProvider(LLMProvider):
     ) -> None:
         self.name = name
         self.model = model
+        clean_key, has_key = _effective_api_key(api_key)
         self._client = AsyncOpenAI(
-            api_key=api_key or "missing",
+            api_key=clean_key or "missing",
             base_url=base_url,
             timeout=timeout_sec,
         )
         self._cost_in = cost_per_1k_input
         self._cost_out = cost_per_1k_output
-        self._has_key = bool(api_key)
+        self._has_key = has_key
 
     async def chat_completion(
         self,

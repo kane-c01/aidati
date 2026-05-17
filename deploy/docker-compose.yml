@@ -8,9 +8,7 @@
 # 用法:
 #   docker compose -f deploy/docker-compose.yml up -d                 # 仅起基础设施
 #   docker compose -f deploy/docker-compose.yml --profile app up -d   # 全部起
-# ====================================================
-
-name: ai-quiz-dev
+# 兼容 docker-compose v1：省略顶层 name（Compose v2 可加回）
 
 networks:
   ai-quiz-net:

@@ -27,8 +27,9 @@ class Settings(BaseSettings):
     # LLM 提供商
     llm_primary_provider: str = "deepseek"  # deepseek | qwen | glm | mock
     llm_backup_providers: list[str] = ["qwen", "glm"]
-    """无 API key 时强制走 mock(本地调试默认 true)"""
-    llm_force_mock: bool = True
+    """为 true 时强制只走占位 MockLLM（会忽略真实 API）。
+    生产环境必须为 false，否则用户会看到「占位 A/B」题干。(本地联调可无 key：设 true 或为各模型配置真实密钥)"""
+    llm_force_mock: bool = False
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     qwen_api_key: str = ""

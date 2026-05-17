@@ -9,7 +9,7 @@
  * 也可在 prisma migrate reset 时自动跑(由 package.json prisma.seed 配置)
  *
  * Seed 内容:
- * 1. system_config 默认配置(含 OSS 等需在后台可编辑项, 见 SYSTEM_CONFIGS)
+ * 1. system_config 默认配置(缺则插入;已存在则只更新 description,不覆盖 value;含 OSS 与 LLM 后台项)
  * 2. 默认超级管理员 admin
  *    - 密码: 优先取环境变量 ADMIN_DEFAULT_PASSWORD;
  *           未设置则随机生成 24 位强密码,并打印到 stdout (仅打印一次, 不入库明文)
@@ -134,6 +134,58 @@ const SYSTEM_CONFIGS: ConfigItem[] = [
     value: '',
     description: '公开访问 URL 基址(末尾不要斜杠), 用于拼接文件直链',
   },
+  // LLM 运行时: 与 admin 配置页、LlmRuntimeService.CONFIG_KEYS 对齐; 留空可走 ai-service .env
+  {
+    key: 'llm_deepseek_api_key',
+    value: '',
+    description: 'DeepSeek API Key(敏感;后台保存后在 ai-health / 出题链路中使用)',
+  },
+  {
+    key: 'llm_qwen_api_key',
+    value: '',
+    description: '通义千问 API Key(可选)',
+  },
+  {
+    key: 'llm_glm_api_key',
+    value: '',
+    description: '智谱 GLM API Key(可选)',
+  },
+  {
+    key: 'llm_deepseek_base_url',
+    value: 'https://api.deepseek.com',
+    description: 'DeepSeek OpenAI 兼容 Base URL',
+  },
+  {
+    key: 'llm_qwen_base_url',
+    value: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    description: '通义千问兼容 Base URL',
+  },
+  {
+    key: 'llm_glm_base_url',
+    value: 'https://open.bigmodel.cn/api/paas/v4',
+    description: '智谱 GLM Base URL',
+  },
+  // 视觉模型(VL): 与 admin 配置页、VisionRuntimeService.CONFIG_KEYS 对齐
+  {
+    key: 'vision_provider',
+    value: 'qwen_vl',
+    description: '视觉识别提供商: 目前 qwen_vl',
+  },
+  {
+    key: 'vision_model',
+    value: 'qwen-vl-max',
+    description: '视觉模型 ID',
+  },
+  {
+    key: 'vision_api_key',
+    value: '',
+    description: 'DashScope API Key(可选;空则 ai-service 可回落到 Qwen Key)',
+  },
+  {
+    key: 'vision_base_url',
+    value: '',
+    description: '视觉 API Base URL(留空走 DashScope 兼容默认)',
+  },
 ];
 
 async function upsertSystemConfig(): Promise<void> {
@@ -141,7 +193,7 @@ async function upsertSystemConfig(): Promise<void> {
     await prisma.systemConfig.upsert({
       where: { keyName: cfg.key },
       update: {
-        value: cfg.value,
+        // 仅同步说明文案;不覆盖 value,避免线上已配好的 COS/额度等被 seed 刷掉
         description: cfg.description,
       },
       create: {
@@ -151,7 +203,7 @@ async function upsertSystemConfig(): Promise<void> {
       },
     });
   }
-  console.log(`✅ system_config: 已初始化 ${SYSTEM_CONFIGS.length} 项配置`);
+  console.log(`✅ system_config: 已确保 ${SYSTEM_CONFIGS.length} 项配置存在(缺则创建,已有则保留 value)`);
 }
 
 /**

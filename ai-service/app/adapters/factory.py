@@ -105,8 +105,10 @@ def build_chain_from_runtime(rt: "LlmRuntimeConfig | None" = None) -> list[LLMPr
     chain: list[LLMProvider] = []
 
     def _try_add(name: str, model: str, api_key: str | None, base_url: str | None) -> None:
-        key = (api_key or "").strip()
-        if not key:
+        from app.adapters.openai_compat import _effective_api_key
+
+        key, ok = _effective_api_key(api_key or "")
+        if not ok:
             return
         cost = _COSTS.get(model, (0.002, 0.004))
         chain.append(

@@ -160,19 +160,62 @@ export class StorageService implements OnModuleInit {
     accessKey: string,
     secretKey: string,
   ): void {
-    this.client = new S3Client({
+    const { resolvedEndpoint, forcePathStyle } = StorageService.resolveCosCompatibleEndpoint(
       endpoint,
+      this.bucket,
+    );
+
+    this.client = new S3Client({
+      endpoint: resolvedEndpoint,
       region,
       credentials: {
         accessKeyId: accessKey,
         secretAccessKey: secretKey,
       },
-      forcePathStyle: true,
+      forcePathStyle,
     });
 
     this.logger.log(
-      `Storage initialized provider=${this.provider} bucket=${this.bucket} endpoint=${endpoint}`,
+      `Storage initialized provider=${this.provider} bucket=${this.bucket} endpoint=${resolvedEndpoint}` +
+        (resolvedEndpoint !== endpoint.trim() ? ` (configured=${endpoint.trim()})` : '') +
+        ` forcePathStyle=${forcePathStyle}`,
     );
+  }
+
+  /**
+   * 腾讯云 COS：
+   * - 若配置成虚拟托管 `https://{bucket}.cos.{region}.myqcloud.com`，需规范成 regional endpoint
+   *   `https://cos.{region}.myqcloud.com`，并让 SDK 使用 **虚拟托管**（forcePathStyle=false）。
+   *   否则沿用 path-style（`cos.../bucket/key`）会触发服务端 `PathStyleDomainForbidden`。
+   * - 不可在 endpoint 里写死 `{bucket}` 同时又传 Bucket——否则部分 SDK 会得到重复 bucket 的 Host。
+   *
+   * 预签 PUT 形如：`https://{bucket}.cos.ap-shanghai.myqcloud.com/{key}?…`
+   * 小程序需把 `{bucket}.cos.{region}.myqcloud.com` 加入下载/上传合法域名。
+   */
+  private static resolveCosCompatibleEndpoint(
+    endpoint: string,
+    bucket: string,
+  ): { resolvedEndpoint: string; forcePathStyle: boolean } {
+    const ep = endpoint.trim();
+    const bn = bucket.trim().toLowerCase();
+    try {
+      const host = new URL(ep).hostname.toLowerCase();
+      if (bn && host.startsWith(`${bn}.cos.`) && host.endsWith('.myqcloud.com')) {
+        const regionInHost = host.slice(`${bn}.cos.`.length, host.length - '.myqcloud.com'.length);
+        if (regionInHost.length > 0) {
+          return {
+            resolvedEndpoint: `https://cos.${regionInHost}.myqcloud.com`,
+            forcePathStyle: false,
+          };
+        }
+      }
+      if (host.startsWith('cos.') && host.endsWith('.myqcloud.com')) {
+        return { resolvedEndpoint: ep, forcePathStyle: false };
+      }
+    } catch {
+      /* 非法 URL → 退回 */
+    }
+    return { resolvedEndpoint: ep, forcePathStyle: true };
   }
 
   private nonEmpty(v: string | undefined | null): string | undefined {
@@ -257,12 +300,51 @@ export class StorageService implements OnModuleInit {
   /**
    * 把客户端回传的 URL 解析成 key
    * 校验 URL 必须挂在本存储桶下, 防止替换成第三方域名做钓鱼/盗链
+   *
+   * 1) 优先匹配 oss_public_base / OSS_PUBLIC_BASE(与 buildPublicUrl 一致)
+   * 2) COS 虚拟托管 https://{bucket}.cos.{region}.myqcloud.com/{key}
+   * 3) COS path-style 预签 https://cos.{region}.myqcloud.com/{bucket}/{key}
    */
   resolveKeyFromUrl(url: string): string | null {
     if (!url) return null;
+    const trimmed = url.trim();
     const base = this.publicBase.replace(/\/$/, '');
-    if (!url.startsWith(base + '/')) return null;
-    return url.slice(base.length + 1);
+    if (base.length > 0 && trimmed.startsWith(`${base}/`)) {
+      return trimmed.slice(base.length + 1);
+    }
+    const bn = this.bucket?.trim();
+    if (!bn) return null;
+    const bnLower = bn.toLowerCase();
+    try {
+      const u = new URL(trimmed);
+      const host = u.hostname.toLowerCase();
+      const prefix = `${bnLower}.cos.`;
+      if (host.startsWith(prefix) && host.endsWith('.myqcloud.com')) {
+        let key = u.pathname.startsWith('/') ? u.pathname.slice(1) : u.pathname;
+        try {
+          key = decodeURIComponent(key);
+        } catch {
+          /* 保持编码路径 */
+        }
+        return key.length > 0 ? key : null;
+      }
+      // path-style：https://cos.{region}.myqcloud.com/{bucket}/{objectKey}
+      if (host.startsWith('cos.') && host.endsWith('.myqcloud.com')) {
+        const rawPath = u.pathname.startsWith('/') ? u.pathname.slice(1) : u.pathname;
+        const segments = rawPath.split('/').filter(Boolean);
+        if (segments.length >= 2 && segments[0].toLowerCase() === bnLower) {
+          const rest = segments.slice(1).join('/');
+          try {
+            return decodeURIComponent(rest);
+          } catch {
+            return rest || null;
+          }
+        }
+      }
+    } catch {
+      return null;
+    }
+    return null;
   }
 
   /**

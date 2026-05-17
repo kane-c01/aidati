@@ -17,6 +17,7 @@ from typing import AsyncIterator
 import structlog
 from fastapi import FastAPI
 
+from app.adapters.openai_compat import _effective_api_key
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.routers import extract as extract_router
@@ -37,6 +38,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         version=settings.version,
         llm_force_mock=settings.llm_force_mock,
     )
+    if not settings.llm_force_mock:
+        has_any_llm_key = (
+            _effective_api_key(settings.deepseek_api_key)[1]
+            or _effective_api_key(settings.qwen_api_key)[1]
+            or _effective_api_key(settings.glm_api_key)[1]
+        )
+        if not has_any_llm_key:
+            logger.warning(
+                "ai_service.no_valid_llm_keys",
+                msg="未配置有效 LLM API Key(或仍为 __placeholder__)，请求将落到链条末端的 MOCK，用户会看到「占位 A/B」题干。请在环境变量中写入 DEEPSEEK_API_KEY / QWEN_API_KEY / GLM_API_KEY 其一。",
+            )
     yield
     logger.info("ai_service.shutdown")
 
